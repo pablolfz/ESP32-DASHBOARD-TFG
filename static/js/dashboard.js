@@ -166,7 +166,8 @@ async function fetchAndDrawHistoricalData() {
         const response = await fetch('/api/history'); 
         
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            // Manejamos el error 500 del servidor
+            throw new Error(`HTTP error! status: ${response.status} - Server failed to return history.`);
         }
         
         data = await response.json();
@@ -175,6 +176,7 @@ async function fetchAndDrawHistoricalData() {
         console.error('CRÍTICO: Error de conexión o API. Web no puede obtener datos de Flask. 👉', error);
         document.getElementById('current-temp1-value').textContent = 'API Error';
         document.getElementById('currentTime').textContent = 'Conexión Fallida';
+        // Detener la ejecución si no hay datos válidos
         return; 
     }
     
@@ -213,7 +215,7 @@ async function fetchAndDrawHistoricalData() {
     };
 
     // ----------------------------------------------------
-    // 3. CÁLCULO Y DIBUJO DE GRÁFICAS (Mantenido igual)
+    // 3. CÁLCULO Y DIBUJO DE GRÁFICAS (CORRECCIÓN TEMPERATURA)
     // ----------------------------------------------------
 
     const validTemps1 = temperatures1.filter(v => v !== null && v !== 999.0);
@@ -248,10 +250,27 @@ async function fetchAndDrawHistoricalData() {
         ];
         
         drawChart('tempChart', tempDatasets, labels, tempAxisConfig, xAxisConfig); 
+
     } else {
-        console.warn("ADVERTENCIA: No hay datos válidos para dibujar las temperaturas.");
+        // ⭐ CORRECCIÓN: FORZAR EL DIBUJO DEL CONTENEDOR AUNQUE NO HAYA DATOS VÁLIDOS ⭐
+        console.warn("ADVERTENCIA: No hay datos válidos (quizás solo 999.0). Forzando visualización del eje.");
+
+        tempAxisConfig = { 
+            min: 10,  // Rango predeterminado si no hay datos válidos
+            max: 40,
+            title: { display: true, text: 'Temperatura (°C)' }
+        };
+        
+        // Usar los datos crudos (que contendrán 999.0/null) para inicializar el chart
+        const tempDatasets = [
+            { label: 'Temperatura 1 (°C)', data: temperatures1, color: 'rgb(255, 165, 0)' },
+            { label: 'Temperatura 2 (°C)', data: temperatures2, color: 'rgb(255, 99, 132)' }
+        ];
+        
+        drawChart('tempChart', tempDatasets, labels, tempAxisConfig, xAxisConfig); 
     }
     
+    // ... La lógica de la gráfica de batería sigue igual
     if (validBattVolts.length > 0) {
          const minBatt = Math.min(...validBattVolts);
          const maxBatt = Math.max(...validBattVolts);
@@ -273,10 +292,14 @@ async function fetchAndDrawHistoricalData() {
          drawChart('batteryChart', battDatasets, labels, battAxisConfig, xAxisConfig);
     } else {
          console.warn("ADVERTENCIA: No hay datos válidos para dibujar la batería.");
+         // Si la gráfica de batería falla, al menos dibujar el contenedor vacío
+         const battDatasets = [{ label: 'Voltaje de Batería (V)', data: batteryVolts, color: 'rgb(75, 192, 192)' }];
+         battAxisConfig = { min: 3.0, max: 4.5, title: { display: true, text: 'Voltaje (V)' } };
+         drawChart('batteryChart', battDatasets, labels, battAxisConfig, xAxisConfig);
     }
 
     // ----------------------------------------------------
-    // 4. ACTUALIZACIÓN DE CAJAS (AJUSTE SOLICITADO)
+    // 4. ACTUALIZACIÓN DE CAJAS 
     // ----------------------------------------------------
     
     // ⭐ Mapeo de datos para las cajas
