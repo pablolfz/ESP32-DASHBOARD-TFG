@@ -1,4 +1,4 @@
-# Archivo: app.py (SOLUCIÓN DEFINITIVA para Render/Gunicorn/PyMongo)
+# Archivo: app.py (SOLUCIÓN FINAL Y COMPLETA para Render/Gunicorn/PyMongo)
 
 from flask import Flask, request, jsonify, render_template
 from datetime import datetime
@@ -12,26 +12,40 @@ app = Flask(__name__,
             static_folder=BASE_DIR / 'static',
             template_folder=BASE_DIR / 'templates')
 
-# --- CONFIGURACIÓN CRÍTICA DE MONGODB ---
+# --- FUNCIÓN AUXILIAR CRÍTICA: safe_float ---
+def safe_float(value, default=None):
+    """
+    Convierte un valor (que puede ser int, float o str) a float de forma segura.
+    Si la conversión falla o el valor es None, devuelve el valor por defecto (None).
+    """
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return default
+    return default
+# --- FIN safe_float ---
 
-# ⭐ CAMBIO CRÍTICO 1: ELIMINAR LA CONEXIÓN GLOBAL
-# La conexión a la DB ya NO se hace al inicio del archivo. 
-# Solo definimos las constantes.
+
+# --- CONFIGURACIÓN CRÍTICA DE MONGODB ---
+# CRÍTICO: Lee la cadena de conexión de las variables de entorno de Render.
 MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017/") 
 DB_NAME = "lora_dashboard_db" 
 COLLECTION_NAME = "readings"  
 
-# Función auxiliar para inicializar la conexión por worker
+# Función auxiliar para inicializar la conexión por worker (evita deadlock de Gunicorn)
 def get_mongo_collection():
     """Inicializa y devuelve la colección de MongoDB de forma lazy (por worker)."""
     try:
-        # La variable MONGO_URI debe ser leída aquí (dentro de la función worker)
+        # Crea la conexión dentro del contexto del worker
         client = MongoClient(MONGO_URI) 
         db = client[DB_NAME]
         return db[COLLECTION_NAME]
     except Exception as e:
         print(f"CRÍTICO: Fallo al conectar a MongoDB Atlas en worker: {e}")
-        # Lanza la excepción para que el worker falle y Render muestre el error 500
+        # Lanza la excepción para que Flask devuelva un 500 si la DB está caída
         raise
 
 # --- ENDPOINT 1: RECIBIR DATOS DEL ESP32 (POST) ---
@@ -43,7 +57,7 @@ def receive_data():
         data = request.get_json()
         print(f"DEBUG: Datos recibidos del ESP32: {data}")
 
-        # ⭐ SECCIÓN RESTAURADA (NameError: 'lectura' no definido) ⭐
+        # La llamada a safe_float ya no generará NameError
         temp1_val = safe_float(data.get('temp1'))
         temp2_val = safe_float(data.get('temp2'))
         batt_val = safe_float(data.get('batt'))
@@ -51,9 +65,11 @@ def receive_data():
         rssi_val = safe_float(data.get('rssi'))
 
         if temp1_val is None or batt_val is None:
+             # Si los datos principales son inválidos, retorna un 200 con warning
+             print("ADVERTENCIA: Datos principales nulos o inválidos. Omisión de log.")
              return jsonify({"status": "warning", "message": "Invalid data"}), 200
 
-        # CRÍTICO: Construcción del diccionario 'reading' (antes 'lectura' en el log)
+        # Construcción del diccionario 'reading'
         reading = {
             "timestamp": datetime.now().isoformat(),
             "temp1": temp1_val,
@@ -70,7 +86,7 @@ def receive_data():
         
     except Exception as e:
         print(f"CRÍTICO: Error al guardar datos o conectar: {e}")
-        # Retorna error 500 solo si falla la DB o la lógica
+        # Retorna error 500
         return jsonify({"status": "error", "message": "Server failed to log data"}), 500
 
 
@@ -80,21 +96,23 @@ def get_history():
     try:
         readings_collection = get_mongo_collection()
 
-        # ⭐ SECCIÓN RESTAURADA (NameError: 'history_data' no definido) ⭐
+        # Consulta a MongoDB: últimos 200, ordenados descendentemente
         cursor = readings_collection.find(
-            {}, # Filtro vacío (trae todos)
-            {"_id": 0} # No incluir el ID interno de MongoDB en el resultado
+            {}, 
+            {"_id": 0} # Excluir el ID interno
         ).sort("timestamp", -1).limit(200)
         
-        # CRÍTICO: Construcción de la lista 'history_data'
+        # Construcción de la lista 'history_data'
         history_data = list(cursor) 
             
         # El frontend espera orden cronológico ASCENDENTE
         return jsonify(list(reversed(history_data))) 
     
     except Exception as e:
+        # Se activa si falla la conexión o la consulta a MongoDB
         print(f"Error fetching history from MongoDB: {e}")
         return jsonify([]), 500
+
 # --- SERVIR LA PÁGINA WEB ---
 @app.route('/')
 def index():
