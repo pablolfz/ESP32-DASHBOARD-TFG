@@ -38,24 +38,39 @@ def get_mongo_collection():
 @app.route('/api/data', methods=['POST'])
 def receive_data():
     try:
-        # ⭐ CAMBIO 2: OBTENER LA CONEXIÓN DENTRO DE LA FUNCIÓN ⭐
         readings_collection = get_mongo_collection()
         
         data = request.get_json()
         print(f"DEBUG: Datos recibidos del ESP32: {data}")
 
-        # ... (Resto de la lógica de extracción y validación de datos se mantiene)
+        # ⭐ SECCIÓN RESTAURADA (NameError: 'lectura' no definido) ⭐
+        temp1_val = safe_float(data.get('temp1'))
+        temp2_val = safe_float(data.get('temp2'))
+        batt_val = safe_float(data.get('batt'))
+        pct_val = safe_float(data.get('pct'))
+        rssi_val = safe_float(data.get('rssi'))
 
-        # Usar la colección para insertar
+        if temp1_val is None or batt_val is None:
+             return jsonify({"status": "warning", "message": "Invalid data"}), 200
+
+        # CRÍTICO: Construcción del diccionario 'reading' (antes 'lectura' en el log)
+        reading = {
+            "timestamp": datetime.now().isoformat(),
+            "temp1": temp1_val,
+            "temp2": temp2_val,
+            "batt": batt_val,
+            "pct": pct_val,
+            "rssi": rssi_val
+        }
+        
         readings_collection.insert_one(reading)
         
         print(f"DEBUG: Datos guardados en MongoDB. OK.")
-        # Retorno exitoso
         return jsonify({"status": "success", "message": "Data logged successfully"}), 200
         
     except Exception as e:
         print(f"CRÍTICO: Error al guardar datos o conectar: {e}")
-        # ⭐ CRÍTICO: El POST falló internamente, retorna un 500 ⭐
+        # Retorna error 500 solo si falla la DB o la lógica
         return jsonify({"status": "error", "message": "Server failed to log data"}), 500
 
 
@@ -63,18 +78,23 @@ def receive_data():
 @app.route('/api/history')
 def get_history():
     try:
-        # ⭐ CAMBIO 3: OBTENER LA CONEXIÓN DENTRO DE LA FUNCIÓN ⭐
         readings_collection = get_mongo_collection()
 
-        # ... (Resto de la lógica de consulta y formato se mantiene)
-        # La consulta a la DB usa la conexión local del worker
+        # ⭐ SECCIÓN RESTAURADA (NameError: 'history_data' no definido) ⭐
+        cursor = readings_collection.find(
+            {}, # Filtro vacío (trae todos)
+            {"_id": 0} # No incluir el ID interno de MongoDB en el resultado
+        ).sort("timestamp", -1).limit(200)
         
+        # CRÍTICO: Construcción de la lista 'history_data'
+        history_data = list(cursor) 
+            
+        # El frontend espera orden cronológico ASCENDENTE
         return jsonify(list(reversed(history_data))) 
     
     except Exception as e:
         print(f"Error fetching history from MongoDB: {e}")
         return jsonify([]), 500
-
 # --- SERVIR LA PÁGINA WEB ---
 @app.route('/')
 def index():
@@ -88,3 +108,4 @@ if __name__ == '__main__':
     # Esta parte solo se ejecuta si corre el archivo directamente (local)
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
+
