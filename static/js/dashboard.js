@@ -9,8 +9,69 @@ const TEMP_MIN_SAFETY = -15;
 const TEMP_MAX_SAFETY = 60;
 
 /**
+ * Muestra un mensaje temporal en el dashboard.
+ * @param {string} message Mensaje a mostrar.
+ * @param {string} type 'success' o 'error'.
+ */
+function showMessage(message, type) {
+    const container = document.getElementById('message-container');
+    container.textContent = message;
+    container.className = `message-container ${type}`;
+    container.style.opacity = 1;
+    container.style.display = 'block';
+
+    setTimeout(() => {
+        container.style.opacity = 0;
+        setTimeout(() => {
+            container.className = 'message-container hidden';
+        }, 500); // Espera la transición de opacidad
+    }, 5000); // Muestra por 5 segundos
+}
+
+/**
+ * Función que inicia la descarga del archivo CSV llamando al endpoint de Flask.
+ */
+function downloadData() {
+    showMessage('Iniciando descarga de CSV...', 'success');
+    // Forzar la redirección para que el navegador descargue el archivo
+    window.location.href = '/api/export'; 
+}
+
+/**
+ * Pide confirmación para eliminar datos de la base de datos.
+ */
+async function confirmCleanup() {
+    // Usamos el confirm nativo, ya que el archivo JS se ejecuta en el navegador del usuario.
+    const isConfirmed = window.confirm("ADVERTENCIA: ¿Está seguro de que desea ELIMINAR todos los registros de la base de datos anteriores a 30 días? Esta acción es irreversible.");
+
+    if (isConfirmed) {
+        try {
+            const response = await fetch('/api/cleanup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                showMessage(`Limpieza exitosa: ${result.message}`, 'success');
+                // Forzar una actualización para reflejar el cambio en los gráficos
+                fetchAndDrawHistoricalData(); 
+            } else {
+                const errorText = await response.text();
+                throw new Error(`Fallo del servidor: ${response.status} - ${errorText}`);
+            }
+        } catch (error) {
+            console.error('Error durante la limpieza de datos:', error);
+            showMessage(`Fallo en la limpieza: Verifique el log de Render.`, 'error');
+        }
+    } else {
+        showMessage('Limpieza cancelada.', 'error');
+    }
+}
+
+
+/**
  * Función auxiliar para crear o actualizar una gráfica.
- * (Mantenido igual)
  */
 function drawChart(canvasId, datasets, labels, yAxisConfig = {}, xAxisConfig = {}) {
     const ctx = document.getElementById(canvasId).getContext('2d');
@@ -119,7 +180,7 @@ function drawChart(canvasId, datasets, labels, yAxisConfig = {}, xAxisConfig = {
 
 /**
  * Actualiza el icono y el color del contenedor de señal basado en el RSSI.
- * (Mantenido igual)
+ * (Lógica de icono de señal)
  */
 function updateSignalIcon(rssiValue) {
     const iconElement = document.getElementById('signal-icon');
@@ -166,7 +227,6 @@ async function fetchAndDrawHistoricalData() {
         const response = await fetch('/api/history'); 
         
         if (!response.ok) {
-            // Manejamos el error 500 del servidor
             throw new Error(`HTTP error! status: ${response.status} - Server failed to return history.`);
         }
         
@@ -188,7 +248,7 @@ async function fetchAndDrawHistoricalData() {
     const lastReading = data[data.length - 1];
     
     // ----------------------------------------------------
-    // 1. EXTRACCIÓN Y FILTRADO DE DATOS (Mantenido igual)
+    // 1. EXTRACCIÓN Y FILTRADO DE DATOS
     // ----------------------------------------------------
     
     const labels = data.map(item => item.timestamp); 
@@ -203,7 +263,7 @@ async function fetchAndDrawHistoricalData() {
     const batteryVolts = mapAndFilter('batt');   
     
     // ----------------------------------------------------
-    // 2. CÁLCULO DE RANGO HORIZONTAL (Mantenido igual)
+    // 2. CÁLCULO DE RANGO HORIZONTAL
     // ----------------------------------------------------
     const endTime = new Date(lastReading.timestamp).getTime();
     const ONE_HOUR_MS = 60 * 60 * 1000; 
@@ -215,7 +275,7 @@ async function fetchAndDrawHistoricalData() {
     };
 
     // ----------------------------------------------------
-    // 3. CÁLCULO Y DIBUJO DE GRÁFICAS (CORRECCIÓN TEMPERATURA)
+    // 3. CÁLCULO Y DIBUJO DE GRÁFICAS (CORRECCIÓN 999.0)
     // ----------------------------------------------------
 
     const validTemps1 = temperatures1.filter(v => v !== null && v !== 999.0);
@@ -252,16 +312,15 @@ async function fetchAndDrawHistoricalData() {
         drawChart('tempChart', tempDatasets, labels, tempAxisConfig, xAxisConfig); 
 
     } else {
-        // ⭐ CORRECCIÓN: FORZAR EL DIBUJO DEL CONTENEDOR AUNQUE NO HAYA DATOS VÁLIDOS ⭐
+        // CORRECCIÓN: FORZAR EL DIBUJO DEL CONTENEDOR AUNQUE NO HAYA DATOS VÁLIDOS (solo 999.0)
         console.warn("ADVERTENCIA: No hay datos válidos (quizás solo 999.0). Forzando visualización del eje.");
 
         tempAxisConfig = { 
-            min: 10,  // Rango predeterminado si no hay datos válidos
+            min: 10, 
             max: 40,
             title: { display: true, text: 'Temperatura (°C)' }
         };
         
-        // Usar los datos crudos (que contendrán 999.0/null) para inicializar el chart
         const tempDatasets = [
             { label: 'Temperatura 1 (°C)', data: temperatures1, color: 'rgb(255, 165, 0)' },
             { label: 'Temperatura 2 (°C)', data: temperatures2, color: 'rgb(255, 99, 132)' }
@@ -270,7 +329,7 @@ async function fetchAndDrawHistoricalData() {
         drawChart('tempChart', tempDatasets, labels, tempAxisConfig, xAxisConfig); 
     }
     
-    // ... La lógica de la gráfica de batería sigue igual
+    // --- Lógica de la gráfica de batería ---
     if (validBattVolts.length > 0) {
          const minBatt = Math.min(...validBattVolts);
          const maxBatt = Math.max(...validBattVolts);
@@ -292,7 +351,7 @@ async function fetchAndDrawHistoricalData() {
          drawChart('batteryChart', battDatasets, labels, battAxisConfig, xAxisConfig);
     } else {
          console.warn("ADVERTENCIA: No hay datos válidos para dibujar la batería.");
-         // Si la gráfica de batería falla, al menos dibujar el contenedor vacío
+         // Dibujar contenedor vacío para la batería
          const battDatasets = [{ label: 'Voltaje de Batería (V)', data: batteryVolts, color: 'rgb(75, 192, 192)' }];
          battAxisConfig = { min: 3.0, max: 4.5, title: { display: true, text: 'Voltaje (V)' } };
          drawChart('batteryChart', battDatasets, labels, battAxisConfig, xAxisConfig);
