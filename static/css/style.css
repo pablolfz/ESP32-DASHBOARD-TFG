@@ -185,8 +185,9 @@ h1 {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     border: 1px solid #ddd;
     position: relative; 
-    /* ⭐⭐ AÑADIDO: Altura para reducir el tamaño visual del gráfico ⭐⭐ */
+    /* ⭐⭐ AÑADIDO: Altura Fija y Máxima (CRÍTICO para Chart.js con maintainAspectRatio: false) ⭐⭐ */
     height: 350px; 
+    max-height: 350px; 
 }
 .chart-container h2 {
     font-size: 20px;
