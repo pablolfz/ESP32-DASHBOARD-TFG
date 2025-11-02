@@ -130,11 +130,12 @@ function drawChart(canvasId, datasets, labels, yAxisConfig = {}, xAxisConfig = {
                         mode: 'x',
                     },
                     zoom: {
+                        // ⭐ CRÍTICO: Desactivar zoom con rueda y pinch ⭐
                         wheel: {
-                            enabled: true,
+                            enabled: false,
                         },
                         pinch: {
-                            enabled: true,
+                            enabled: false,
                         },
                         mode: 'x',
                     }
@@ -144,6 +145,30 @@ function drawChart(canvasId, datasets, labels, yAxisConfig = {}, xAxisConfig = {
     });
 
     window[canvasId + 'Instance'] = chartInstance;
+}
+
+/**
+ * Incrementa o decrementa el zoom en el eje X mediante botones.
+ * factor: -1 para zoom in, 1 para zoom out.
+ */
+function buttonZoom(chartId, factor) {
+    const chart = window[chartId + 'Instance'];
+    if (chart) {
+        const scale = chart.scales.x;
+        const center = (scale.min + scale.max) / 2;
+        const currentRange = scale.max - scale.min;
+        let newRange;
+
+        if (factor === -1) { // Zoom In
+            newRange = currentRange * 0.8; // Reduce el rango en 20%
+        } else { // Zoom Out (factor === 1)
+            newRange = currentRange / 0.8; // Aumenta el rango en 20%
+        }
+
+        chart.options.scales.x.min = center - newRange / 2;
+        chart.options.scales.x.max = center + newRange / 2;
+        chart.update();
+    }
 }
 
 /**
@@ -495,3 +520,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // Mantiene la actualización periódica
     setInterval(fetchAndDrawHistoricalData, 30000); 
 });
+
+/**
+ * Incrementa o decrementa el zoom en el eje X mediante botones.
+ * factor: -1 para zoom in, 1 para zoom out.
+ */
+function buttonZoom(chartId, factor) {
+    const chart = window[chartId + 'Instance'];
+    if (chart) {
+        const scale = chart.scales.x;
+        const center = (scale.min + scale.max) / 2;
+        const currentRange = scale.max - scale.min;
+        let newRange;
+
+        if (factor === -1) { // Zoom In
+            newRange = currentRange * 0.8; // Reduce el rango en 20%
+        } else { // Zoom Out (factor === 1)
+            newRange = currentRange / 0.8; // Aumenta el rango en 20%
+        }
+
+        chart.options.scales.x.min = center - newRange / 2;
+        chart.options.scales.x.max = center + newRange / 2;
+        chart.update();
+    }
+}
