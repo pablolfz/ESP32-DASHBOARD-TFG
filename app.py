@@ -1,10 +1,12 @@
 # Archivo: app.py (SOLUCIÓN FINAL Y COMPLETA para Render/Gunicorn/PyMongo)
 
-from flask import Flask, request, jsonify, render_template
-from datetime import datetime
+from flask import Flask, request, jsonify, render_template, send_file # <-- MODIFICADO
+from datetime import datetime, timedelta # <-- MODIFICADO
 from pymongo import MongoClient
 import os 
 from pathlib import Path
+import io # <-- NUEVA IMPORTACIÓN
+import csv # <-- NUEVA IMPORTACIÓN
 
 # --- CONFIGURACIÓN DE FLASK ---
 BASE_DIR = Path(__file__).parent.absolute()
@@ -112,6 +114,79 @@ def get_history():
         # Se activa si falla la conexión o la consulta a MongoDB
         print(f"Error fetching history from MongoDB: {e}")
         return jsonify([]), 500
+
+# ⭐ NUEVOS ENDPOINTS DE GESTIÓN DE DATOS ⭐
+
+@app.route('/api/export', methods=['GET'])
+def export_data():
+    """Exporta todos los datos de MongoDB a un archivo CSV."""
+    try:
+        readings_collection = get_mongo_collection()
+        
+        # Cursor para todos los documentos, ordenados por fecha
+        cursor = readings_collection.find(
+            {}, 
+            {"_id": 0} 
+        ).sort("timestamp", 1) 
+        
+        data = list(cursor)
+        
+        if not data:
+            return jsonify({"status": "warning", "message": "No hay datos para exportar."}), 200
+
+        # Usar io.StringIO para escribir el CSV en memoria
+        output = io.StringIO()
+        
+        # Definir los nombres de las columnas
+        fieldnames = ['timestamp', 'temp1', 'temp2', 'batt', 'pct', 'rssi']
+        
+        writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction='ignore')
+        writer.writeheader()
+        writer.writerows(data)
+        
+        # Usar io.BytesIO para devolver el archivo binario
+        output.seek(0)
+        buffer = io.BytesIO(output.getvalue().encode('utf-8'))
+        
+        filename = f"lora_data_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        
+        # Flask usa send_file para descargar el archivo
+        return send_file(
+            buffer,
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name=filename
+        )
+
+    except Exception as e:
+        print(f"CRÍTICO: Error al exportar datos: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/cleanup', methods=['POST'])
+def delete_old_data():
+    """Elimina todos los registros de más de 30 días para liberar espacio."""
+    try:
+        readings_collection = get_mongo_collection()
+        
+        # Calcula el punto de corte (30 días atrás)
+        cutoff_date = datetime.now() - timedelta(days=30)
+        
+        # Consulta para eliminar todos los documentos con timestamp anterior al punto de corte
+        # Asume que el 'timestamp' se guarda en formato ISO-8601 (str)
+        result = readings_collection.delete_many({
+            "timestamp": {"$lt": cutoff_date.isoformat()}
+        })
+        
+        print(f"DEBUG: Tarea de limpieza completada. Registros eliminados: {result.deleted_count}")
+        return jsonify({
+            "status": "success", 
+            "message": f"Limpieza completada. {result.deleted_count} registros eliminados (más de 30 días)."
+        }), 200
+
+    except Exception as e:
+        print(f"CRÍTICO: Error durante la limpieza de datos: {e}")
+        return jsonify({"status": "error", "message": "Fallo en la limpieza del servidor."}), 500
 
 # --- SERVIR LA PÁGINA WEB ---
 @app.route('/')
