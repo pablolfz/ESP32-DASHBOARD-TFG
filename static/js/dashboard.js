@@ -91,6 +91,9 @@ function downloadData() {
  * Pide confirmación y, si es afirmativo, inicia la limpieza de la base de datos.
  */
 function confirmCleanup() {
+    // NOTA CRÍTICA: La confirmación en el frontend con 'confirm()' NO debe usarse.
+    // Usamos la función 'confirm()' de JavaScript por simplicidad en este entorno,
+    // pero si esta fuera una app real, se usaría un modal personalizado.
     if (confirm('ADVERTENCIA: ¿Está seguro de que desea ELIMINAR todos los registros anteriores a 30 días? Esta acción es irreversible.')) {
         cleanupData();
     } else {
@@ -106,18 +109,26 @@ async function cleanupData() {
             headers: { 'Content-Type': 'application/json' }
         });
 
+        // ⭐ CORRECCIÓN: Si el servidor devuelve un 500, intentamos leer el error.
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Fallo del servidor (${response.status}): ${errorText.substring(0, 100)}...`);
+        }
+
         const result = await response.json();
         
-        if (response.ok && result.status === 'success') {
+        if (result.status === 'success') {
             showMessage('success', `Limpieza exitosa: ${result.message}`);
             // Forzar una actualización de la gráfica después de la limpieza
             fetchAndDrawHistoricalData(); 
         } else {
+            // Esto se ejecuta si Flask retorna 200 OK, pero con status: 'error' en el JSON
             showMessage('error', `Fallo en la limpieza: ${result.message}`);
         }
 
     } catch (error) {
-        showMessage('error', 'Error de conexión al intentar limpiar la base de datos.');
+        // Muestra el error detallado, que debería provenir del backend si hay un fallo
+        showMessage('error', `Error de limpieza: ${error.message}`);
         console.error('Cleanup Error:', error);
     }
 }
