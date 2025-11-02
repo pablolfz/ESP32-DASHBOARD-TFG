@@ -90,7 +90,8 @@ h1 {
     color: var(--color-primary);
 }
 .subtitle {
-    margin-bottom: 25px;
+    /* ⭐ CAMBIO AQUÍ: Reducir el margen inferior para acercar los recuadros ⭐ */
+    margin-bottom: 10px;
     color: #666;
     font-size: 14px;
 }
