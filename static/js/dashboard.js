@@ -8,14 +8,12 @@ const RESOLUTION_MARGIN = 0.5;
 const TEMP_MIN_SAFETY = -15;
 const TEMP_MAX_SAFETY = 60;
 
-// --- FUNCIONES DE GESTIÓN DE GRÁFICAS Y TIEMPO ---
-
 /**
- * Muestra un mensaje temporal en la interfaz (éxito o error).
+ * Muestra mensajes de estado (éxito, error) en el contenedor de mensajes.
  */
-function showMessage(type, content) {
+function showMessage(type, text) {
     const container = document.getElementById('message-container');
-    container.textContent = content;
+    container.textContent = text;
     container.className = `message-container ${type}`;
     container.classList.remove('hidden');
 
@@ -23,116 +21,6 @@ function showMessage(type, content) {
         container.classList.add('hidden');
     }, 5000);
 }
-
-/**
- * Restablece el zoom de un gráfico a su rango inicial (última hora).
- */
-function resetZoom(chartId) {
-    const chart = window[chartId + 'Instance'];
-    if (chart) {
-        chart.resetZoom();
-        showMessage('success', 'Zoom de la gráfica restablecido.');
-    }
-}
-
-/**
- * Desplaza el gráfico en el eje X por una cantidad de horas.
- * @param {string} chartId ID del elemento canvas del gráfico.
- * @param {number} amount Cantidad de horas a desplazar (positivo para adelantar, negativo para retrasar).
- */
-function moveTime(chartId, amount) {
-    const chart = window[chartId + 'Instance'];
-    if (chart && chart.options.plugins.zoom) {
-        // La unidad de Chart.js es milisegundos (1 hora = 3600000 ms)
-        const panAmount = amount * 3600000; 
-
-        // Usamos la función nativa del plugin de zoom para el pan (desplazamiento)
-        chart.pan({ x: panAmount }, undefined, 'none');
-        showMessage('success', `Desplazamiento de ${amount > 0 ? '+' : ''}${amount} horas aplicado.`);
-    }
-}
-
-/**
- * Centra el gráfico en una fecha y hora específicas introducidas por el usuario.
- */
-function jumpToTime(chartId, datetimeId) {
-    const chart = window[chartId + 'Instance'];
-    const inputElement = document.getElementById(datetimeId);
-    const dateValue = inputElement.value;
-
-    if (!chart || !dateValue) {
-        showMessage('error', 'Por favor, introduzca una fecha y hora válidas.');
-        return;
-    }
-
-    const targetTime = new Date(dateValue).getTime();
-    const duration = chart.scales.x.max - chart.scales.x.min;
-    
-    // Calcula el nuevo rango centrado en la hora deseada
-    const newMin = targetTime - duration / 2;
-    const newMax = targetTime + duration / 2;
-
-    // Aplica el nuevo rango al eje X
-    chart.zoomScale('x', { min: newMin, max: newMax }, 'none');
-
-    showMessage('success', `Gráfica centrada en ${dateValue}.`);
-}
-
-/**
- * Inicia la descarga del archivo CSV.
- */
-function downloadData() {
-    showMessage('success', 'Iniciando descarga de datos históricos...');
-    // Redirige al endpoint de Flask que genera el archivo
-    window.location.href = '/api/export';
-}
-
-/**
- * Pide confirmación y, si es afirmativo, inicia la limpieza de la base de datos.
- */
-function confirmCleanup() {
-    // NOTA CRÍTICA: La confirmación en el frontend con 'confirm()' NO debe usarse.
-    // Usamos la función 'confirm()' de JavaScript por simplicidad en este entorno,
-    // pero si esta fuera una app real, se usaría un modal personalizado.
-    if (confirm('ADVERTENCIA: ¿Está seguro de que desea ELIMINAR todos los registros anteriores a 30 días? Esta acción es irreversible.')) {
-        cleanupData();
-    } else {
-        showMessage('error', 'Operación de limpieza cancelada por el usuario.');
-    }
-}
-
-async function cleanupData() {
-    showMessage('warning', 'Enviando solicitud de limpieza al servidor...');
-    try {
-        const response = await fetch('/api/cleanup', {
-            method: 'POST', // Usamos POST para la limpieza
-            headers: { 'Content-Type': 'application/json' }
-        });
-
-        // ⭐ CORRECCIÓN: Si el servidor devuelve un 500, intentamos leer el error.
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Fallo del servidor (${response.status}): ${errorText.substring(0, 100)}...`);
-        }
-
-        const result = await response.json();
-        
-        if (result.status === 'success') {
-            showMessage('success', `Limpieza exitosa: ${result.message}`);
-            // Forzar una actualización de la gráfica después de la limpieza
-            fetchAndDrawHistoricalData(); 
-        } else {
-            // Esto se ejecuta si Flask retorna 200 OK, pero con status: 'error' en el JSON
-            showMessage('error', `Fallo en la limpieza: ${result.message}`);
-        }
-
-    } catch (error) {
-        // Muestra el error detallado, que debería provenir del backend si hay un fallo
-        showMessage('error', `Error de limpieza: ${error.message}`);
-        console.error('Cleanup Error:', error);
-    }
-}
-
 
 /**
  * Función auxiliar para crear o actualizar una gráfica.
@@ -145,6 +33,7 @@ function drawChart(canvasId, datasets, labels, yAxisConfig = {}, xAxisConfig = {
         chartInstance.destroy();
     }
     
+    // Generar colores y formatear data para cada dataset
     const formattedDatasets = datasets.map(ds => ({
         label: ds.label,
         data: ds.data.map((val, index) => ({ 
@@ -191,15 +80,20 @@ function drawChart(canvasId, datasets, labels, yAxisConfig = {}, xAxisConfig = {
                         bounds: 'ticks'
                     },
                     ticks: {
-                        autoSkip: true,  
-                        maxTicksLimit: 10, 
-                        maxRotation: 0, 
-                        minRotation: 0, 
-                        font: { size: 12 },
+                        autoSkip: false,  
+                        maxTicksLimit: 200, 
+                        maxRotation: 45, 
+                        minRotation: 45, 
+                        font: {
+                            size: 12
+                        },
                         padding: 10,
                         crossAlign: 'near',
+                        stepSize: 5
                     },
-                    grid: { display: true }
+                    grid: {
+                        display: true 
+                    }
                 },
                 y: { 
                     ...yAxisConfig, 
@@ -208,7 +102,13 @@ function drawChart(canvasId, datasets, labels, yAxisConfig = {}, xAxisConfig = {
                         display: true,
                         text: datasets[0].label.includes('Temperatura') ? 'Temperatura (°C)' : datasets[0].label.includes('Voltaje') ? 'Voltaje (V)' : ''
                     },
-                    ticks: { font: { size: 14 }, padding: 5, crossAlign: 'near' }
+                    ticks: {
+                        font: {
+                            size: 14
+                        },
+                        padding: 5,
+                        crossAlign: 'near' 
+                    }
                 }
             },
             
@@ -216,21 +116,25 @@ function drawChart(canvasId, datasets, labels, yAxisConfig = {}, xAxisConfig = {
                 legend: {
                     display: true,
                     position: 'top',
-                    labels: { padding: 15, font: { size: 14 } }
+                    labels: {
+                        padding: 15,
+                        font: {
+                            size: 14
+                        }
+                    }
                 },
-                // ⭐ Configuración del Plugin de Zoom (para el control del usuario) ⭐
+                // ⭐ Plugin de zoom (Implementación del control) ⭐
                 zoom: {
                     pan: {
                         enabled: true,
-                        mode: 'x', // Permitir desplazamiento solo en el eje del tiempo
-                        threshold: 5
+                        mode: 'x',
                     },
                     zoom: {
                         wheel: {
-                            enabled: true, // Habilitar zoom con la rueda del ratón
+                            enabled: true,
                         },
                         pinch: {
-                            enabled: true // Habilitar zoom con pellizco (touch)
+                            enabled: true,
                         },
                         mode: 'x',
                     }
@@ -241,6 +145,94 @@ function drawChart(canvasId, datasets, labels, yAxisConfig = {}, xAxisConfig = {
 
     window[canvasId + 'Instance'] = chartInstance;
 }
+
+/**
+ * Restablece el zoom del gráfico a su rango inicial de tiempo (1 hora).
+ */
+function resetZoom(chartId) {
+    const chart = window[chartId + 'Instance'];
+    if (chart) {
+        chart.resetZoom();
+        // Además de resetZoom, centramos en el último punto si es necesario
+        fetchAndDrawHistoricalData(true);
+    }
+}
+
+/**
+ * Desplaza el gráfico en el tiempo (eje X).
+ * amount: 1 (adelante), -1 (atrás), 0 (centrar en la última hora)
+ */
+function moveTime(chartId, amount) {
+    const chart = window[chartId + 'Instance'];
+    if (chart && amount !== 0) {
+        const scale = chart.scales.x;
+        const range = scale.max - scale.min;
+        const newMin = scale.min + range * amount * 0.2; // Mover 20% del rango
+        const newMax = scale.max + range * amount * 0.2;
+
+        chart.options.scales.x.min = newMin;
+        chart.options.scales.x.max = newMax;
+        chart.update();
+    } else if (chart && amount === 0) {
+        // Centrar en la última hora si amount es 0
+        fetchAndDrawHistoricalData(true); 
+    }
+}
+
+/**
+ * Busca y centra el gráfico en una fecha y hora específicas.
+ */
+function jumpToTime(chartId, datetimeId) {
+    const chart = window[chartId + 'Instance'];
+    const datetimeInput = document.getElementById(datetimeId).value;
+
+    if (!chart || !datetimeInput) {
+        showMessage('error', 'Por favor, ingrese una fecha y hora válidas.');
+        return;
+    }
+
+    const targetDate = new Date(datetimeInput);
+    if (isNaN(targetDate)) {
+        showMessage('error', 'Formato de fecha u hora no reconocido.');
+        return;
+    }
+
+    // El eje X es de 1 hora de ancho (3600000 ms)
+    const range = 3600000; 
+    const targetTimeMs = targetDate.getTime();
+    
+    // Buscamos el punto de datos más cercano a esa hora
+    let closestTime = -1;
+    let minDiff = Infinity;
+
+    // Usamos los labels (timestamps) para encontrar el punto más cercano
+    const labels = chart.data.labels;
+
+    labels.forEach(timestamp => {
+        const currentMs = new Date(timestamp).getTime();
+        const diff = Math.abs(currentMs - targetTimeMs);
+        if (diff < minDiff) {
+            minDiff = diff;
+            closestTime = currentMs;
+        }
+    });
+
+    if (minDiff > range * 0.1) { // Si el punto más cercano está a más de 6 minutos de distancia
+        showMessage('error', 'No se encontraron datos cercanos a esa fecha/hora.');
+        return;
+    }
+
+    // Centrar la vista del gráfico en el punto encontrado (muestra 1 hora centrada)
+    const newMin = closestTime - range / 2;
+    const newMax = closestTime + range / 2;
+    
+    chart.options.scales.x.min = newMin;
+    chart.options.scales.x.max = newMax;
+    chart.update();
+    
+    showMessage('success', `Gráfico centrado en la lectura más cercana a ${targetDate.toLocaleTimeString()}.`);
+}
+
 
 /**
  * Actualiza el icono y el color del contenedor de señal basado en el RSSI.
@@ -281,7 +273,7 @@ function updateSignalIcon(rssiValue) {
 
 
 // Función principal para obtener datos y actualizar el dashboard
-async function fetchAndDrawHistoricalData() {
+async function fetchAndDrawHistoricalData(forceReset = false) {
     console.log("Intentando actualizar datos...");
 
     let data;
@@ -290,7 +282,6 @@ async function fetchAndDrawHistoricalData() {
         const response = await fetch('/api/history'); 
         
         if (!response.ok) {
-            // Manejamos el error 500 del servidor
             throw new Error(`HTTP error! status: ${response.status} - Server failed to return history.`);
         }
         
@@ -305,9 +296,6 @@ async function fetchAndDrawHistoricalData() {
     
     if (data.length === 0) {
         document.getElementById('currentTime').textContent = 'No data available';
-        // Detener la ejecución si no hay datos disponibles
-        // Intentar dibujar el contenedor de gráficos vacío con un rango predeterminado
-        tryDrawEmptyCharts();
         return;
     }
 
@@ -321,8 +309,7 @@ async function fetchAndDrawHistoricalData() {
     
     const mapAndFilter = (key) => data.map(item => {
         const val = item[key];
-        // Retorna null si el valor es null, no es número, o es el valor de error 999.0
-        return typeof val === 'number' && !isNaN(val) && val !== 999.0 ? val : null;
+        return typeof val === 'number' && !isNaN(val) ? val : null;
     });
 
     const temperatures1 = mapAndFilter('temp1'); 
@@ -330,23 +317,27 @@ async function fetchAndDrawHistoricalData() {
     const batteryVolts = mapAndFilter('batt');   
     
     // ----------------------------------------------------
-    // 2. CÁLCULO DE RANGO HORIZONTAL
+    // 2. CÁLCULO DE RANGO HORIZONTAL (Eje X)
     // ----------------------------------------------------
     const endTime = new Date(lastReading.timestamp).getTime();
-    const SIX_HOURS_MS = 6 * 60 * 60 * 1000; // Mostrar las últimas 6 horas por defecto
-    const startTime = endTime - SIX_HOURS_MS; 
-
-    let xAxisConfig = {
-        min: startTime,
-        max: endTime 
-    };
+    const ONE_HOUR_MS = 60 * 60 * 1000; 
+    
+    // Solo ajusta el rango de tiempo si es la carga inicial o forzada
+    let xAxisConfig = {};
+    if (forceReset || !window.tempChartInstance) {
+        const startTime = endTime - ONE_HOUR_MS; 
+        xAxisConfig = {
+            min: startTime,
+            max: endTime 
+        };
+    }
 
     // ----------------------------------------------------
-    // 3. CÁLCULO Y DIBUJO DE GRÁFICAS
+    // 3. CÁLCULO Y DIBUJO DE GRÁFICAS (Zoom Inteligente en Y)
     // ----------------------------------------------------
 
-    const validTemps1 = temperatures1.filter(v => v !== null);
-    const validTemps2 = temperatures2.filter(v => v !== null);
+    const validTemps1 = temperatures1.filter(v => v !== null && v !== 999.0);
+    const validTemps2 = temperatures2.filter(v => v !== null && v !== 999.0);
     const validBattVolts = batteryVolts.filter(v => v !== null);
 
     let tempAxisConfig = {}; 
@@ -358,19 +349,21 @@ async function fetchAndDrawHistoricalData() {
         const minTemp = Math.min(...allValidTemps); 
         const maxTemp = Math.max(...allValidTemps); 
         
+        // ⭐ AJUSTE DE ZOOM INTELIGENTE EN Y (MARGEN DE 1.0) ⭐
         tempAxisConfig = {
-            min: Math.floor(minTemp - RESOLUTION_MARGIN), 
-            max: Math.ceil(maxTemp + RESOLUTION_MARGIN)
+            min: Math.floor(minTemp - 1.0), 
+            max: Math.ceil(maxTemp + 1.0)
         };
+
+        // Reglas de seguridad para el rango si es demasiado pequeño
+        if (tempAxisConfig.max - tempAxisConfig.min < 2.0) {
+            tempAxisConfig.max += 1.0;
+            tempAxisConfig.min -= 1.0;
+        }
 
         if (tempAxisConfig.min < TEMP_MIN_SAFETY) tempAxisConfig.min = TEMP_MIN_SAFETY;
         if (tempAxisConfig.max > TEMP_MAX_SAFETY) tempAxisConfig.max = TEMP_MAX_SAFETY;
         
-        if (tempAxisConfig.max - tempAxisConfig.min < 1) {
-             tempAxisConfig.max += 0.5;
-             tempAxisConfig.min -= 0.5;
-        }
-
         const tempDatasets = [
             { label: 'Temperatura 1 (°C)', data: temperatures1, color: 'rgb(255, 165, 0)' },
             { label: 'Temperatura 2 (°C)', data: temperatures2, color: 'rgb(255, 99, 132)' }
@@ -379,21 +372,34 @@ async function fetchAndDrawHistoricalData() {
         drawChart('tempChart', tempDatasets, labels, tempAxisConfig, xAxisConfig); 
 
     } else {
-        // CORRECCIÓN: Forzar el dibujo del contenedor de temperatura
-        console.warn("ADVERTENCIA: No hay datos válidos (solo 999.0/null). Forzando visualización del eje.");
-        tryDrawEmptyCharts(labels, xAxisConfig, temperatures1, temperatures2, batteryVolts);
+        // Forzar el dibujo del contenedor si no hay datos válidos (solo 999.0)
+        console.warn("ADVERTENCIA: No hay datos válidos. Forzando visualización del eje.");
+
+        tempAxisConfig = { 
+            min: 10,  
+            max: 40,
+            title: { display: true, text: 'Temperatura (°C)' }
+        };
+        
+        const tempDatasets = [
+            { label: 'Temperatura 1 (°C)', data: temperatures1, color: 'rgb(255, 165, 0)' },
+            { label: 'Temperatura 2 (°C)', data: temperatures2, color: 'rgb(255, 99, 132)' }
+        ];
+        
+        drawChart('tempChart', tempDatasets, labels, tempAxisConfig, xAxisConfig); 
     }
     
+    // Lógica de la gráfica de batería (Sigue usando la lógica de zoom inteligente similar)
     if (validBattVolts.length > 0) {
          const minBatt = Math.min(...validBattVolts);
          const maxBatt = Math.max(...validBattVolts);
          
          battAxisConfig = {
-             min: minBatt - 0.1,
-             max: maxBatt + 0.1
+             min: minBatt - 0.05,
+             max: maxBatt + 0.05
          };
 
-         if (battAxisConfig.max - battAxisConfig.min < 0.2) {
+         if (battAxisConfig.max - battAxisConfig.min < 0.1) {
              battAxisConfig.max += 0.1;
              battAxisConfig.min -= 0.1;
          }
@@ -403,13 +409,15 @@ async function fetchAndDrawHistoricalData() {
          ];
 
          drawChart('batteryChart', battDatasets, labels, battAxisConfig, xAxisConfig);
-    } else if (allValidTemps.length > 0) {
-         // Si hay datos de tiempo, al menos intenta dibujar la batería vacía
-         tryDrawEmptyCharts(labels, xAxisConfig, temperatures1, temperatures2, batteryVolts);
+    } else {
+         console.warn("ADVERTENCIA: No hay datos válidos para dibujar la batería.");
+         const battDatasets = [{ label: 'Voltaje de Batería (V)', data: batteryVolts, color: 'rgb(75, 192, 192)' }];
+         battAxisConfig = { min: 3.0, max: 4.5, title: { display: true, text: 'Voltaje (V)' } };
+         drawChart('batteryChart', battDatasets, labels, battAxisConfig, xAxisConfig);
     }
 
     // ----------------------------------------------------
-    // 4. ACTUALIZACIÓN DE CAJAS (Mantenido igual)
+    // 4. ACTUALIZACIÓN DE CAJAS (Contenido y Hora)
     // ----------------------------------------------------
     
     const currentTemp1 = lastReading.temp1 && lastReading.temp1 !== 999.0 ? lastReading.temp1.toFixed(1) : "Error";
@@ -433,28 +441,57 @@ async function fetchAndDrawHistoricalData() {
     document.getElementById('currentTime').textContent = `${lastTime} (${lastDate})`;
 }
 
-/**
- * Intenta dibujar gráficos vacíos si no hay datos válidos para definir los rangos.
- */
-function tryDrawEmptyCharts(labels = [], xAxisConfig = { min: Date.now() - (6 * 3600000), max: Date.now() }, 
-                            temps1 = [], temps2 = [], battVolts = []) {
-    
-    // Dibujar Temperatura vacía
-    const tempAxisConfig = { min: 10, max: 40, title: { display: true, text: 'Temperatura (°C)' } };
-    const tempDatasets = [
-        { label: 'Temperatura 1 (°C)', data: temps1, color: 'rgb(255, 165, 0)' },
-        { label: 'Temperatura 2 (°C)', data: temps2, color: 'rgb(255, 99, 132)' }
-    ];
-    drawChart('tempChart', tempDatasets, labels, tempAxisConfig, xAxisConfig); 
+// ⭐ Funciones de Gestión de Datos ⭐
 
-    // Dibujar Batería vacía
-    const battAxisConfig = { min: 3.0, max: 4.5, title: { display: true, text: 'Voltaje (V)' } };
-    const battDatasets = [{ label: 'Voltaje de Batería (V)', data: battVolts, color: 'rgb(75, 192, 192)' }];
-    drawChart('batteryChart', battDatasets, labels, battAxisConfig, xAxisConfig);
+/**
+ * Inicia la descarga del CSV.
+ */
+function downloadData() {
+    window.location.href = '/api/export';
+    showMessage('success', 'Descargando datos. Por favor, espere a que el archivo CSV aparezca en sus descargas.');
 }
+
+/**
+ * Muestra una confirmación antes de limpiar los datos.
+ */
+function confirmCleanup() {
+    const isConfirmed = window.confirm("ADVERTENCIA: ¿Está seguro de que desea eliminar permanentemente TODOS los registros ANTERIORES a 30 días? Esta acción es irreversible.");
+    
+    if (isConfirmed) {
+        cleanupData();
+    } else {
+        showMessage('error', 'Limpieza cancelada por el usuario.');
+    }
+}
+
+/**
+ * Llama al endpoint de Flask para eliminar los datos antiguos.
+ */
+async function cleanupData() {
+    try {
+        const response = await fetch('/api/cleanup', {
+            method: 'POST',
+        });
+        
+        const result = await response.json();
+
+        if (response.ok && result.status === 'success') {
+            showMessage('success', result.message);
+            // Vuelve a cargar los datos para reflejar los cambios
+            fetchAndDrawHistoricalData(true); 
+        } else {
+            showMessage('error', `Fallo en la limpieza: ${result.message || 'Error desconocido del servidor.'}`);
+        }
+    } catch (error) {
+        showMessage('error', `Fallo de conexión al servidor durante la limpieza: ${error.message}`);
+    }
+}
+
 
 // Inicializar la carga al cargar el documento y configurar el Polling
 document.addEventListener('DOMContentLoaded', () => {
-    fetchAndDrawHistoricalData(); 
+    // Carga inicial y ajusta el zoom
+    fetchAndDrawHistoricalData(true); 
+    // Mantiene la actualización periódica
     setInterval(fetchAndDrawHistoricalData, 30000); 
 });
