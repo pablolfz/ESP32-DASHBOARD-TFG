@@ -90,7 +90,7 @@ h1 {
     color: var(--color-primary);
 }
 .subtitle {
-    /* ⭐ CORRECCIÓN: Reducir el margen inferior para acercar los recuadros ⭐ */
+    /* Reducir el margen inferior para acercar los recuadros */
     margin-bottom: 10px;
     color: #666;
     font-size: 14px;
@@ -185,10 +185,17 @@ h1 {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     border: 1px solid #ddd;
     position: relative; 
-    /* ⭐⭐ AÑADIDO: Altura Fija y Máxima (CRÍTICO para Chart.js con maintainAspectRatio: false) ⭐⭐ */
+    /* Altura fija para controlar el tamaño de la gráfica y evitar el crecimiento */
     height: 350px; 
-    max-height: 350px; 
+    max-height: 50vh; 
 }
+/* ⭐ CRÍTICO: Asegurar que el canvas use el 100% del contenedor ⭐ */
+.chart-container canvas {
+    width: 100% !important;
+    height: 100% !important;
+    display: block; 
+}
+
 .chart-container h2 {
     font-size: 20px;
     font-weight: 600;
@@ -239,7 +246,6 @@ h1 {
     cursor: pointer;
     font-weight: 600;
     transition: background-color 0.2s;
-    white-space: nowrap; /* Evita que el texto de los botones se rompa */
 }
 
 .chart-controls button:hover {
@@ -254,3 +260,4 @@ h1 {
     flex-grow: 1; /* Permite que el campo de fecha se expanda */
     max-width: 220px;
 }
+
