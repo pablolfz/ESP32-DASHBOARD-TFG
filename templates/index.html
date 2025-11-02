@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard LoRa | UGR</title>
+    <title>Dashboard LoRa | Estación Meteorológica</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <!-- Librería para el zoom y pan en Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
@@ -20,6 +22,7 @@
     <header class="header">
         <div class="logo">
             <div class="logo-images">
+                <!-- Se asume que logo_ugr1.png y logo_ets.jpg son los archivos correctos -->
                 <img src="{{ url_for('static', filename='images/logo_ugr1.png') }}" alt="Logo UGR" class="header-logo" style="height: 60px;">
                 <img src="{{ url_for('static', filename='images/logo_ets.jpg') }}" alt="Logo ETS Caminos" class="header-logo" style="height: 60px;">
             </div>
@@ -27,21 +30,22 @@
         </div>
     
         <nav class="nav">
-            <a href="/">Mediciones a tiempo real</a>
-            <a href="#" onclick="showCustomAlert('La función Histórico muestra las gráficas debajo.')">Historico</a>
-            <!-- ⭐ BOTONES DE GESTIÓN DE DATOS ⭐ -->
+            <!-- Menú simple (texto) -->
+            <a href="#">Mediciones a tiempo real</a> 
+            <!-- Botones de gestión de datos (con estilos de botón en CSS) -->
             <a href="#" onclick="downloadData()">Descargar CSV</a>
             <a href="#" onclick="confirmCleanup()">Limpiar (30 días)</a>
-            <a href="#" onclick="showCustomAlert('Contacto: pablolfz@ugr.es')">Contacto</a>
+            <a href="#">Contacto</a>
         </nav>
     </header>
 
     <div class="container">
         <h1>Mediciones a tiempo real</h1>
-        <p class="subtitle">Última actualización: <span id="currentTime">No data available</span></p>
         
-        <!-- Contenedor para mensajes/Alertas -->
+        <!-- Contenedor para mostrar mensajes de éxito/error de las operaciones -->
         <div id="message-container" class="message-container hidden"></div>
+
+        <p class="subtitle">Última actualización: <span id="currentTime">No data available</span></p>
 
         <div class="current-data-grid">
             
@@ -87,13 +91,37 @@
 
         <div class="charts-grid">
             
+            <!-- CONTENEDOR DE GRÁFICO DE TEMPERATURA -->
             <div class="chart-container" style="grid-column: span 2;">
                 <h2>Temperatura Histórica (°C)</h2>
+                
+                <!-- Panel de Control 1 -->
+                <div class="chart-controls">
+                    <button onclick="resetZoom('tempChart')">Restablecer Zoom</button>
+                    <button onclick="moveTime('tempChart', 1)">Adelantar 1h</button>
+                    <button onclick="moveTime('tempChart', -1)">Retrasar 1h</button>
+                    <label>Saltar a:</label>
+                    <input type="datetime-local" id="tempChartDatetime">
+                    <button onclick="jumpToTime('tempChart', 'tempChartDatetime')">Buscar</button>
+                </div>
+
                 <canvas id="tempChart"></canvas> 
             </div>
 
+            <!-- CONTENEDOR DE GRÁFICO DE BATERÍA -->
             <div class="chart-container" style="grid-column: span 2;">
                 <h2>Voltaje de Batería (V)</h2>
+                
+                <!-- Panel de Control 2 -->
+                <div class="chart-controls">
+                    <button onclick="resetZoom('batteryChart')">Restablecer Zoom</button>
+                    <button onclick="moveTime('batteryChart', 1)">Adelantar 1h</button>
+                    <button onclick="moveTime('batteryChart', -1)">Retrasar 1h</button>
+                    <label>Saltar a:</label>
+                    <input type="datetime-local" id="batteryChartDatetime">
+                    <button onclick="jumpToTime('batteryChart', 'batteryChartDatetime')">Buscar</button>
+                </div>
+
                 <canvas id="batteryChart"></canvas> 
             </div>
             
@@ -101,67 +129,6 @@
         
     </div>
 
-    <!-- Script para los botones y alertas -->
-    <script>
-        // Función para mostrar alertas personalizadas
-        function showCustomAlert(message, isError = false) {
-            const container = document.getElementById('message-container');
-            if (!container) return; // Asegurar que el contenedor exista
-
-            container.textContent = message;
-            container.classList.remove('hidden', 'success', 'error');
-            container.classList.add(isError ? 'error' : 'success');
-            // Muestra la alerta temporalmente
-            container.style.opacity = 1;
-            setTimeout(() => {
-                container.style.opacity = 0;
-                // Ocultar completamente después de la transición
-                setTimeout(() => container.classList.add('hidden'), 500); 
-            }, 5000);
-        }
-
-        // Función de descarga (inicia la descarga desde el endpoint GET /api/export)
-        function downloadData() {
-            // Esto redirige la ventana y fuerza la descarga del archivo CSV generado por Flask
-            window.location.href = '/api/export';
-            showCustomAlert('Iniciando la descarga del historial completo...');
-        }
-
-        // Función para confirmar y ejecutar la limpieza (POST /api/cleanup)
-        function confirmCleanup() {
-            // Usamos window.confirm() ya que la instrucción original del Canvas lo permite
-            if (window.confirm('ADVERTENCIA: ¿Estás seguro de que deseas eliminar TODOS los datos de más de 30 días? Esta acción es irreversible.')) {
-                
-                // Muestra un mensaje de espera
-                showCustomAlert('Procesando limpieza de datos antiguos...', false);
-
-                fetch('/api/cleanup', {
-                    method: 'POST', // CRÍTICO: Usar POST
-                    headers: { 'Content-Type': 'application/json' }
-                })
-                .then(response => {
-                    if (response.status === 200) {
-                        return response.json();
-                    }
-                    throw new Error('Server response not 200 OK');
-                })
-                .then(data => {
-                    if (data.status === 'success') {
-                        showCustomAlert(data.message, false);
-                        // Vuelve a cargar los datos en el dashboard después de la limpieza
-                        fetchAndDrawHistoricalData(); 
-                    } else {
-                        showCustomAlert('Error al limpiar datos: ' + data.message, true);
-                    }
-                })
-                .catch(error => {
-                    showCustomAlert('Fallo de conexión con el servidor al intentar limpiar.', true);
-                    console.error('Cleanup Error:', error);
-                });
-            }
-        }
-    </script>
     <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script> 
 </body>
 </html>
-
