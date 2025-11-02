@@ -27,15 +27,21 @@
         </div>
     
         <nav class="nav">
-            <a href="#">Mediciones a tiempo real</a>
-            <a href="#">Historico</a>
-            <a href="#">Contacto</a>
+            <a href="/">Mediciones a tiempo real</a>
+            <a href="#" onclick="showCustomAlert('La función Histórico muestra las gráficas debajo.')">Historico</a>
+            <!-- ⭐ BOTONES DE GESTIÓN DE DATOS ⭐ -->
+            <a href="#" onclick="downloadData()">Descargar CSV</a>
+            <a href="#" onclick="confirmCleanup()">Limpiar (30 días)</a>
+            <a href="#" onclick="showCustomAlert('Contacto: pablolfz@ugr.es')">Contacto</a>
         </nav>
     </header>
 
     <div class="container">
         <h1>Mediciones a tiempo real</h1>
         <p class="subtitle">Última actualización: <span id="currentTime">No data available</span></p>
+        
+        <!-- Contenedor para mensajes/Alertas -->
+        <div id="message-container" class="message-container hidden"></div>
 
         <div class="current-data-grid">
             
@@ -95,6 +101,66 @@
         
     </div>
 
+    <!-- Script para los botones y alertas -->
+    <script>
+        // Función para mostrar alertas personalizadas
+        function showCustomAlert(message, isError = false) {
+            const container = document.getElementById('message-container');
+            if (!container) return; // Asegurar que el contenedor exista
+
+            container.textContent = message;
+            container.classList.remove('hidden', 'success', 'error');
+            container.classList.add(isError ? 'error' : 'success');
+            // Muestra la alerta temporalmente
+            container.style.opacity = 1;
+            setTimeout(() => {
+                container.style.opacity = 0;
+                // Ocultar completamente después de la transición
+                setTimeout(() => container.classList.add('hidden'), 500); 
+            }, 5000);
+        }
+
+        // Función de descarga (inicia la descarga desde el endpoint GET /api/export)
+        function downloadData() {
+            // Esto redirige la ventana y fuerza la descarga del archivo CSV generado por Flask
+            window.location.href = '/api/export';
+            showCustomAlert('Iniciando la descarga del historial completo...');
+        }
+
+        // Función para confirmar y ejecutar la limpieza (POST /api/cleanup)
+        function confirmCleanup() {
+            // Usamos window.confirm() ya que la instrucción original del Canvas lo permite
+            if (window.confirm('ADVERTENCIA: ¿Estás seguro de que deseas eliminar TODOS los datos de más de 30 días? Esta acción es irreversible.')) {
+                
+                // Muestra un mensaje de espera
+                showCustomAlert('Procesando limpieza de datos antiguos...', false);
+
+                fetch('/api/cleanup', {
+                    method: 'POST', // CRÍTICO: Usar POST
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(response => {
+                    if (response.status === 200) {
+                        return response.json();
+                    }
+                    throw new Error('Server response not 200 OK');
+                })
+                .then(data => {
+                    if (data.status === 'success') {
+                        showCustomAlert(data.message, false);
+                        // Vuelve a cargar los datos en el dashboard después de la limpieza
+                        fetchAndDrawHistoricalData(); 
+                    } else {
+                        showCustomAlert('Error al limpiar datos: ' + data.message, true);
+                    }
+                })
+                .catch(error => {
+                    showCustomAlert('Fallo de conexión con el servidor al intentar limpiar.', true);
+                    console.error('Cleanup Error:', error);
+                });
+            }
+        }
+    </script>
     <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script> 
 </body>
 </html>
