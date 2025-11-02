@@ -55,7 +55,8 @@ function drawChart(canvasId, datasets, labels, yAxisConfig = {}, xAxisConfig = {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true, 
+            // ⭐ CRÍTICO: Desactivar aspecto ratio para controlar el tamaño con CSS ⭐
+            maintainAspectRatio: false, 
             
             layout: {
                 padding: {
@@ -123,14 +124,14 @@ function drawChart(canvasId, datasets, labels, yAxisConfig = {}, xAxisConfig = {
                         }
                     }
                 },
-                // ⭐ Plugin de zoom (Implementación del control) ⭐
+                // ⭐ Plugin de zoom ⭐
                 zoom: {
                     pan: {
-                        enabled: true,
+                        enabled: true, // Permite arrastrar el gráfico
                         mode: 'x',
                     },
                     zoom: {
-                        // ⭐ CRÍTICO: Desactivar zoom con rueda y pinch ⭐
+                        // ⭐ CRÍTICO: Desactivar zoom con rueda y pinch (solo botones) ⭐
                         wheel: {
                             enabled: false,
                         },
