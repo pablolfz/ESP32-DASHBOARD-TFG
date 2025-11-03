@@ -1,73 +1,115 @@
-# Archivo: app.py (SOLUCIÓN FINAL Y COMPLETA)
+#app.py---Pablo López Fernández
 
-from flask import Flask, request, jsonify, render_template, send_file
-from datetime import datetime, timedelta
+#Importamos librerias necesarias
+from flask import Flask, request, jsonify, render_template
+from datetime import datetime
 from pymongo import MongoClient
-from io import StringIO
 import os 
-import csv
 from pathlib import Path
 
-# --- CONFIGURACIÓN DE FLASK ---
-BASE_DIR = Path(__file__).parent.absolute()
-app = Flask(__name__, 
-            static_folder=BASE_DIR / 'static',
-            template_folder=BASE_DIR / 'templates')
+# ==============================================================================
+# 1. FUNCIONES AUXILIARES DE VALIDACIÓN Y CONFIGURACIÓN
+# ==============================================================================
 
-# --- CONFIGURACIÓN CRÍTICA DE MONGODB ---
+def safe_float(value):
+    """
+    Intenta convertir un valor de entrada a flotante. 
+    Devuelve None si el valor es None o si la conversión falla (no es numérico).
+    
+    Esta función aegura que solo almacenemos números válidos o el valor None si el campo no existe o 
+    es inválido
+    """
+    if value is None:
+        return None
+    try:
+        # Intenta convertir el valor a flotante
+        return float(value)
+    except (TypeError, ValueError):
+        # Captura errores si el valor es una cadena no numérica o de tipo incorrecto.
+        return None
+
+
+# --- CONFIGURACIÓN DE FLASK ---
+
+# Obtiene la ruta base del directorio del script (app.py) de forma absoluta.
+# 'Pathlib' se usa para construir rutas compatibles con diferentes sistemas operativos.
+BASE_DIR = Path(__file__).parent.absolute()
+
+# Inicialización de la aplicación Flask.
+app = Flask(
+    __name__, 
+    # Define la carpeta donde Flask buscará archivos CSS y JS.
+    static_folder=BASE_DIR / 'static',
+    # Define la carpeta donde Flask buscará los archivos HTML.
+    template_folder=BASE_DIR / 'templates'
+)
+
+# ==============================================================================
+# 2. CONFIGURACIÓN DE MONGODB
+# ==============================================================================
+
+# Se obtiene la cadena de conexión desde las variables de entorno (como 'MONGO_URI').
+# Esto permite que Render inyecte la URL de la base de datos.
+# Si la variable de entorno no existe, usa la URL local por defecto (para desarrollo).
 MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017/") 
 DB_NAME = "lora_dashboard_db" 
 COLLECTION_NAME = "readings"  
 
-# Función auxiliar de validación (SOLUCIONA NameError: safe_float)
-def safe_float(value, default=None):
-    """Convierte un valor a float de forma segura."""
-    if isinstance(value, (int, float)):
-        return float(value)
-    if isinstance(value, str):
-        try:
-            return float(value)
-        except ValueError:
-            return default
-    return default
+# Por ello, la conexión se encapsula en una función y se llama en cada petición para evitar fallos de conexión.
 
-# Función auxiliar para inicializar la conexión por worker (SOLUCIONA DEADLOCK)
 def get_mongo_collection():
-    """Inicializa y devuelve la colección de MongoDB de forma lazy (por worker)."""
+    """
+    Inicializa la conexión de MongoDB y devuelve el objeto 'collection'.
+    """
     try:
-        # La variable MONGO_URI debe ser leída aquí (dentro de la función worker)
-        # Esto es necesario para que cada worker tenga su propia conexión después del fork de Gunicorn
+        # Crea un cliente de MongoDB. Esto puede lanzar una excepción si la URI es incorrecta o el servidor no responde.
         client = MongoClient(MONGO_URI) 
+        # Accede a la base de datos específica.
         db = client[DB_NAME]
-        # Devuelve la colección, lista para ser usada
+        # Devuelve el objeto de la colección 'readings'.
         return db[COLLECTION_NAME]
     except Exception as e:
+        # Manejo de errores de conexión. Si falla, se registra en la consola.
         print(f"CRÍTICO: Fallo al conectar a MongoDB Atlas en worker: {e}")
-        # Lanza la excepción para que Render muestre el error 500
+        # Relanzar la excepción provoca un fallo en el worker, lo que resulta en un error 500
+        # para el cliente, indicando un error grave de infraestructura.
         raise
 
+# ==============================================================================
+# 3. ENDPOINTS DE LA API (Rutas de Servicio)
+# ==============================================================================
 
 # --- ENDPOINT 1: RECIBIR DATOS DEL ESP32 (POST) ---
 @app.route('/api/data', methods=['POST'])
 def receive_data():
+    """
+    Maneja las peticiones POST enviadas por el nodo LoRaWAN/ESP32 con las lecturas de sensores.
+    """
     try:
+        # 1. Establece la conexión a la base de datos.
         readings_collection = get_mongo_collection()
         
+        # 2. Obtiene el cuerpo de la petición como un diccionario JSON.
         data = request.get_json()
-        
-        # Extracción y validación de datos
+        print(f"DEBUG: Datos recibidos del dispositivo: {data}")
+
+        # 3. Validación y conversión de datos
+        # Se utiliza safe_float() para extraer los valores y asegurar que son flotantes válidos.
         temp1_val = safe_float(data.get('temp1'))
         temp2_val = safe_float(data.get('temp2'))
         batt_val = safe_float(data.get('batt'))
         pct_val = safe_float(data.get('pct'))
         rssi_val = safe_float(data.get('rssi'))
 
+        # 4. Verificación de datos mínimos
         if temp1_val is None or batt_val is None:
-             # Si los datos principales son inválidos, retorna un 200 con warning
-             return jsonify({"status": "warning", "message": "Invalid data"}), 200
+            # Si la lectura principal o la batería fallan, se devuelve una advertencia,
+            # indicando que el paquete de datos estaba incompleto o corrupto.
+            return jsonify({"status": "warning", "message": "Invalid data"}), 200
 
-        # Construcción del diccionario 'reading'
+        # 5. Construcción del documento (diccionario) a insertar en MongoDB
         reading = {
+            # Registra la hora del servidor como marca de tiempo, usando formato ISO para consistencia.
             "timestamp": datetime.now().isoformat(),
             "temp1": temp1_val,
             "temp2": temp2_val,
@@ -76,116 +118,69 @@ def receive_data():
             "rssi": rssi_val
         }
         
+        # 6. Inserción de la lectura en la colección.
         readings_collection.insert_one(reading)
         
-        # print(f"DEBUG: Datos guardados en MongoDB. OK.") # Descomentar para debug
+        print(f"DEBUG: Datos guardados en MongoDB. OK.")
+        # 7. Retorno de éxito
         return jsonify({"status": "success", "message": "Data logged successfully"}), 200
         
     except Exception as e:
+        # Manejo genérico de errores (fallos de DB, JSON malformado, etc.)
         print(f"CRÍTICO: Error al guardar datos o conectar: {e}")
+        # Retorna error 500 (Internal Server Error) para problemas irrecuperables.
         return jsonify({"status": "error", "message": "Server failed to log data"}), 500
 
 
 # --- ENDPOINT 2: DEVOLVER DATOS AL JAVASCRIPT (GET) ---
 @app.route('/api/history')
 def get_history():
+    """
+    Recupera las últimas 200 lecturas de la base de datos para alimentar los gráficos del frontend.
+    """
     try:
+        # 1. Establece la conexión a la base de datos.
         readings_collection = get_mongo_collection()
 
-        # Consulta a MongoDB: últimos 200
+        # 2. Ejecución de la consulta de MongoDB
         cursor = readings_collection.find(
-            {}, 
-            {"_id": 0}
-        ).sort("timestamp", -1).limit(200)
+            {}, # Primer argumento: Filtro vacío (trae todos los documentos).
+            {"_id": 0} # Segundo argumento: Proyección. No incluir el campo '_id' interno de MongoDB.
+        ).sort("timestamp", -1).limit(200) # Ordena por 'timestamp' DESCENDENTE (-1) y limita la lista a las 200 más recientes.
         
+        # 3. Conversión de cursor a lista de diccionarios.
         history_data = list(cursor) 
             
-        # El frontend espera orden cronológico ASCENDENTE
+        # 4. Retorno de datos
+        # Se invierte la lista, ya que el frontend de gráficos (Chart.js) espera un orden cronológico ASCENDENTE.
         return jsonify(list(reversed(history_data))) 
     
     except Exception as e:
         print(f"Error fetching history from MongoDB: {e}")
+        # En caso de error, devuelve una lista vacía para que el frontend no falle, y un error 500.
         return jsonify([]), 500
 
-# --- ENDPOINT 3: EXPORTAR DATOS A CSV ---
-@app.route('/api/export', methods=['GET'])
-def export_data():
-    try:
-        readings_collection = get_mongo_collection()
-        
-        # Obtener TODOS los datos de la colección, ordenados
-        cursor = readings_collection.find({}, {"_id": 0}).sort("timestamp", 1)
-        data = list(cursor)
-
-        if not data:
-            return jsonify({"status": "error", "message": "No hay datos para exportar."}), 404
-
-        # Crear un buffer en memoria para el archivo CSV
-        buffer = StringIO()
-        writer = csv.writer(buffer)
-
-        # Definir cabeceras (keys del primer documento)
-        headers = ["timestamp", "temp1", "temp2", "batt", "pct", "rssi"] # Asegurar orden
-        writer.writerow(headers)
-
-        # Escribir filas de datos
-        for item in data:
-            row = [item.get(h) for h in headers]
-            writer.writerow(row)
-
-        # Mover el puntero del buffer al inicio para la lectura
-        buffer.seek(0)
-
-        # Configurar el nombre del archivo de descarga
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"lora_dashboard_data_{timestamp}.csv"
-
-        # Enviar el archivo
-        return send_file(
-            buffer,
-            mimetype='text/csv',
-            as_attachment=True,
-            download_name=filename
-        )
-
-    except Exception as e:
-        print(f"CRÍTICO: Error al exportar datos: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-# --- ENDPOINT 4: LIMPIEZA DE DATOS ANTIGUOS ---
-@app.route('/api/cleanup', methods=['POST'])
-def delete_old_data():
-    try:
-        readings_collection = get_mongo_collection()
-        
-        # Definir el punto de corte (30 días atrás)
-        cutoff_date = datetime.now() - timedelta(days=30)
-        
-        # Eliminar documentos donde el timestamp es anterior a 30 días
-        # CRÍTICO: Usar el formato ISO para la comparación
-        result = readings_collection.delete_many({
-            "timestamp": {"$lt": cutoff_date.isoformat()}
-        })
-        
-        message = f"{result.deleted_count} registros eliminados exitosamente (anteriores a 30 días)."
-        print(f"DEBUG: {message}")
-        
-        return jsonify({"status": "success", "message": message}), 200
-
-    except Exception as e:
-        print(f"CRÍTICO: Error al limpiar datos: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-
-# --- SERVIR LA PÁGINA WEB ---
+# --- ENDPOINT 3: SERVIR LA PÁGINA WEB PRINCIPAL (RAÍZ) ---
 @app.route('/')
 def index():
-    """Sirve el archivo index.html (buscado en la carpeta 'templates')."""
+    """
+    Ruta raíz ('/'). Renderiza y sirve el archivo HTML principal, 
+    que contiene el dashboard y el código JavaScript.
+    """
+    # Busca el archivo 'index.html' en la carpeta 'templates'.
     return render_template('index.html')
 
 
-# --- ARRANQUE DEL SERVIDOR ---
+# ==============================================================================
+# 4. ARRANQUE DEL SERVIDOR
+# ==============================================================================
 
 if __name__ == '__main__':
+    # Este bloque de código solo se ejecuta si el script se corre directamente
+    # (es decir, en el entorno de desarrollo local).
+    
+    # Obtiene el puerto desde la variable de entorno 'PORT' (usada por Render) o usa 5000 por defecto.
     port = int(os.environ.get('PORT', 5000))
+    
+    # Inicia el servidor de desarrollo de Flask.
     app.run(host='0.0.0.0', port=port, debug=True)
