@@ -1,5 +1,6 @@
 /*
  * Archivo: static/css/style.css
+ * Versión mejorada con corrección de canvas y responsividad.
  */
 
 :root {
@@ -35,10 +36,14 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center; 
+    /* ⭐ MEJORA: Evitar que el header se colapse en pantallas pequeñas */
+    flex-wrap: wrap;
+    gap: 10px;
 }
 .logo {
     display: flex; 
     align-items: center; 
+    flex-wrap: wrap; /* Permitir que el logo y el título se reajusten */
 }
 .logo-images {
     display: flex;
@@ -53,17 +58,22 @@ body {
     font-weight: 800;
     color: var(--color-primary);
 }
+.nav {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap; /* Permitir que los enlaces se reajusten */
+    gap: 5px;
+}
 .nav a {
-    margin-left: 20px;
+    margin-left: 10px; /* Reducido para mejor ajuste */
     text-decoration: none;
     color: var(--color-primary); 
     font-weight: 600;
-    /* Estilo de botón para los nuevos enlaces */
     padding: 8px 12px;
     border-radius: 4px;
     transition: background-color 0.2s;
 }
-.nav a:first-child { /* El primer enlace (tiempo real) sigue siendo simple */
+.nav a:first-child { 
     padding: 0;
     border-radius: 0;
 }
@@ -90,7 +100,6 @@ h1 {
     color: var(--color-primary);
 }
 .subtitle {
-    /* Reducir el margen inferior para acercar los recuadros */
     margin-bottom: 10px;
     color: #666;
     font-size: 14px;
@@ -99,7 +108,7 @@ h1 {
 /* --- SECCIÓN DE DATOS ACTUALES (CAJAS) --- */
 .current-data-grid {
     display: grid;
-    /* Diseño para 6 cajas que se ajustan al tamaño */
+    /* ⭐ MEJORA: minmax() asegura que las cajas se vean bien en todos los tamaños */
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); 
     gap: 20px;
     margin-bottom: 40px;
@@ -126,58 +135,47 @@ h1 {
     color: var(--border-color);
 }
 
-/* Colores de fondo específicos para cada caja (AJUSTADOS POR ID) */
+/* Colores de fondo específicos para cada caja */
 #box-temp1 { background-color: var(--color-temp1); }
 #box-temp2 { background-color: var(--color-temp2); } 
 #box-humidity { background-color: var(--color-humidity); }
 #box-signal { background-color: var(--color-signal); } 
-#box-battery-pct { background-color: var(--color-batt-pct); } /* Nivel % */
-#box-battery-volt { background-color: var(--color-batt-volt); } /* Voltaje V */
+#box-battery-pct { background-color: var(--color-batt-pct); }
+#box-battery-volt { background-color: var(--color-batt-volt); }
 
 
 /* --- ESTILOS PARA EL ICONO DE INTENSIDAD DE SEÑAL --- */
-
 .data-icon-container {
     position: absolute;
     top: 25px;
     right: 25px;
     color: initial; 
 }
-
-/* Estilos de Icono/Caja según Nivel de RSSI */
-.signal-level-4 { 
-    color: #4CAF50 !important; /* Verde Fuerte (Excelente) */
-    font-size: 32px !important;
-}
-
-.signal-level-3 { 
-    color: #8BC34A !important; /* Verde Claro (Bueno) */
-    font-size: 28px !important;
-}
-
-.signal-level-2 { 
-    color: #FFC107 !important; /* Amarillo (Pobre) */
-    font-size: 24px !important;
-}
-
-.signal-level-1 { 
-    color: #F44336 !important; /* Rojo (Muy Débil) */
-    font-size: 20px !important;
-}
-
-.signal-level-0 {
-    color: #AAAAAA !important; /* Gris (Sin señal) */
-    font-size: 20px !important;
-}
+.signal-level-4 { color: #4CAF50 !important; font-size: 32px !important; }
+.signal-level-3 { color: #8BC34A !important; font-size: 28px !important; }
+.signal-level-2 { color: #FFC107 !important; font-size: 24px !important; }
+.signal-level-1 { color: #F44336 !important; font-size: 20px !important; }
+.signal-level-0 { color: #AAAAAA !important; font-size: 20px !important; }
 
 
 /* --- SECCIÓN DE GRÁFICAS HISTÓRICAS --- */
 .charts-grid {
     display: grid;
-    /* Dos columnas, perfectas para T1/T2 combinada y Batería debajo */
-    grid-template-columns: 1fr 1fr; 
+    /* ⭐ MEJORA: 1 columna por defecto para móviles */
+    grid-template-columns: 1fr;
     gap: 20px;
 }
+
+/* ⭐ MEJORA: 2 columnas solo en pantallas más grandes */
+@media (min-width: 768px) {
+    .charts-grid {
+        /* Vuelve a 2 columnas en pantallas de tablet/escritorio */
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+
+/* Contenedor de la "tarjeta" del gráfico (título, controles, gráfico) */
 .chart-container {
     background-color: var(--color-header);
     padding: 20px;
@@ -185,22 +183,26 @@ h1 {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     border: 1px solid #ddd;
     position: relative; 
-    /* Altura aumentada para contener el eje X rotado */
-    height: 450px; 
-    /* ⭐ ELIMINADO: max-height: 50vh; (Esta regla conflictiva se ha quitado) */
-
-    /* ⭐ LA VERDADERA SOLUCIÓN: 
-       Esto fuerza a que el padding y el borde se incluyan DENTRO de los 450px,
-       en lugar de sumarse por fuera.
-    */
+    /* Altura quitada de aquí para que el contenido (título, controles) 
+       pueda fluir libremente sin afectar al gráfico. */
     box-sizing: border-box; 
 }
 
-/* ⭐ CRÍTICO: Asegurar que el canvas use el 100% del contenedor ⭐ */
+/* ⭐ SOLUCIÓN: Contenedor solo para el canvas, con altura fija ⭐ */
+.canvas-wrapper {
+    position: relative;
+    /* Esta es la altura fija donde se dibujará el gráfico.
+       450px es un buen tamaño que funciona con los 80px 
+       de padding inferior que pusimos en el JS. */
+    height: 450px; 
+}
+
+/* Regla para el canvas (ahora dentro del wrapper) */
 .chart-container canvas {
     width: 100% !important;
-    /* ⭐ ELIMINADO: height: 100% !important; (Este era el error principal) */
     display: block; 
+    /* 'height: 100%' es manejado por Chart.js (con maintainAspectRatio: false) 
+       para llenar su 'canvas-wrapper'. */
 }
 
 .chart-container h2 {
@@ -235,7 +237,7 @@ h1 {
     border: 1px solid #f5c6cb;
 }
 
-/* ⭐ ESTILOS PARA EL PANEL DE CONTROL DE GRÁFICAS ⭐ */
+/* ESTILOS PARA EL PANEL DE CONTROL DE GRÁFICAS */
 .chart-controls {
     display: flex;
     gap: 10px;
@@ -267,3 +269,4 @@ h1 {
     flex-grow: 1; /* Permite que el campo de fecha se expanda */
     max-width: 220px;
 }
+```eof
