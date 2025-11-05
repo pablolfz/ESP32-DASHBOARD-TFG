@@ -188,7 +188,14 @@ h1 {
     /* Altura aumentada para contener el eje X rotado */
     height: 450px; 
     /* ⭐ ELIMINADO: max-height: 50vh; (Esta regla conflictiva se ha quitado) */
+
+    /* ⭐ LA VERDADERA SOLUCIÓN: 
+       Esto fuerza a que el padding y el borde se incluyan DENTRO de los 450px,
+       en lugar de sumarse por fuera.
+    */
+    box-sizing: border-box; 
 }
+
 /* ⭐ CRÍTICO: Asegurar que el canvas use el 100% del contenedor ⭐ */
 .chart-container canvas {
     width: 100% !important;
