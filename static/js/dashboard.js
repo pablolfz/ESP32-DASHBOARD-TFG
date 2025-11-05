@@ -194,8 +194,8 @@ function drawChart(canvasId, datasets, labels, yAxisConfig = {}, xAxisConfig = {
                     left: 0,
                     right: 10,
                     top: 5,     
-                    // ⭐ ESTA ES LA CORRECCIÓN: Volvemos a 50px ⭐
-                    bottom: 50 
+                    // ⭐ AJUSTE: Reducido a 30px para menos espacio
+                    bottom: 30 
                 }
             },
 
@@ -204,25 +204,29 @@ function drawChart(canvasId, datasets, labels, yAxisConfig = {}, xAxisConfig = {
                     ...xAxisConfig,
                     type: 'time', 
                     time: {
-                        unit: 'minute', 
+                        // ⭐ AJUSTE: Unidad cambiada a 'second' para más granularidad
+                        unit: 'second', 
                         displayFormats: {
-                            minute: 'HH:mm', 
+                            // ⭐ AJUSTE: Formato para mostrar segundos
+                            second: 'HH:mm:ss',
+                            minute: 'HH:mm:ss', 
                             hour: 'HH:mm'
                         },
                         distribution: 'linear', 
                         bounds: 'ticks'
                     },
                     ticks: {
-                        autoSkip: false,  
-                        maxTicksLimit: 200, 
+                        // ⭐ AJUSTE: autoSkip en 'true' para que gestione la superposición
+                        autoSkip: true,
+                        autoSkipPadding: 30, // Espacio entre etiquetas
                         maxRotation: 30, // Rotación ajustada
                         minRotation: 30, // Rotación ajustada
                         font: {
                             size: 12
                         },
                         padding: 10,
-                        crossAlign: 'near',
-                        stepSize: 5
+                        crossAlign: 'near'
+                        // Quitamos maxTicksLimit y stepSize para dejar que Chart.js decida
                     },
                     grid: {
                         display: true 
@@ -236,6 +240,9 @@ function drawChart(canvasId, datasets, labels, yAxisConfig = {}, xAxisConfig = {
                         text: datasets[0].label.includes('Temperatura') ? 'Temperatura (°C)' : datasets[0].label.includes('Voltaje') ? 'Voltaje (V)' : ''
                     },
                     ticks: {
+                        // ⭐ AJUSTE: autoSkip en 'false' y maxTicksLimit para más líneas
+                        autoSkip: false,
+                        maxTicksLimit: 30,
                         font: {
                             size: 14
                         },
