@@ -1,6 +1,7 @@
 /*
  * Archivo: static/css/style.css
- * Versión mejorada con corrección de canvas y responsividad.
+ * CORRECCIÓN: Eliminada la regla '.chart-container canvas' 
+ * para evitar conflictos con Chart.js
  */
 
 :root {
@@ -10,7 +11,7 @@
     --color-header: #fff;
     --color-accent: #007bff;
     
-    /* Colores de las cajas de datos (ajustados a la imagen) */
+    /* Colores de las cajas de datos */
     --color-temp1: #fffbdf;      /* Amarillo claro (T1) */
     --color-temp2: #ffe6f2;      /* Rosa claro (T2) */
     --color-humidity: #e6ffec;   /* Verde claro (Humedad) */
@@ -36,14 +37,13 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center; 
-    /* ⭐ MEJORA: Evitar que el header se colapse en pantallas pequeñas */
     flex-wrap: wrap;
     gap: 10px;
 }
 .logo {
     display: flex; 
     align-items: center; 
-    flex-wrap: wrap; /* Permitir que el logo y el título se reajusten */
+    flex-wrap: wrap;
 }
 .logo-images {
     display: flex;
@@ -61,11 +61,11 @@ body {
 .nav {
     display: flex;
     align-items: center;
-    flex-wrap: wrap; /* Permitir que los enlaces se reajusten */
+    flex-wrap: wrap;
     gap: 5px;
 }
 .nav a {
-    margin-left: 10px; /* Reducido para mejor ajuste */
+    margin-left: 10px;
     text-decoration: none;
     color: var(--color-primary); 
     font-weight: 600;
@@ -108,7 +108,6 @@ h1 {
 /* --- SECCIÓN DE DATOS ACTUALES (CAJAS) --- */
 .current-data-grid {
     display: grid;
-    /* ⭐ MEJORA: minmax() asegura que las cajas se vean bien en todos los tamaños */
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); 
     gap: 20px;
     margin-bottom: 40px;
@@ -161,15 +160,12 @@ h1 {
 /* --- SECCIÓN DE GRÁFICAS HISTÓRICAS --- */
 .charts-grid {
     display: grid;
-    /* ⭐ MEJORA: 1 columna por defecto para móviles */
     grid-template-columns: 1fr;
     gap: 20px;
 }
 
-/* ⭐ MEJORA: 2 columnas solo en pantallas más grandes */
 @media (min-width: 768px) {
     .charts-grid {
-        /* Vuelve a 2 columnas en pantallas de tablet/escritorio */
         grid-template-columns: 1fr 1fr;
     }
 }
@@ -183,27 +179,21 @@ h1 {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     border: 1px solid #ddd;
     position: relative; 
-    /* Altura quitada de aquí para que el contenido (título, controles) 
-       pueda fluir libremente sin afectar al gráfico. */
     box-sizing: border-box; 
 }
 
-/* ⭐ SOLUCIÓN: Contenedor solo para el canvas, con altura fija ⭐ */
+/* Contenedor solo para el canvas, con altura fija */
 .canvas-wrapper {
     position: relative;
-    /* Esta es la altura fija donde se dibujará el gráfico.
-       450px es un buen tamaño que funciona con los 80px 
-       de padding inferior que pusimos en el JS. */
     height: 450px; 
 }
 
-/* Regla para el canvas (ahora dentro del wrapper) */
-.chart-container canvas {
-    width: 100% !important;
-    display: block; 
-    /* 'height: 100%' es manejado por Chart.js (con maintainAspectRatio: false) 
-       para llenar su 'canvas-wrapper'. */
-}
+/*
+ * ⭐ REGLA ELIMINADA ⭐
+ * La regla '.chart-container canvas' se ha quitado 
+ * para que no entre en conflicto con 'responsive: true'
+ * y 'maintainAspectRatio: false' del JS.
+ */
 
 .chart-container h2 {
     font-size: 20px;
@@ -269,4 +259,3 @@ h1 {
     flex-grow: 1; /* Permite que el campo de fecha se expanda */
     max-width: 220px;
 }
-```eof
