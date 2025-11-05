@@ -123,6 +123,10 @@
                 <div class="chart-controls">
                     <!-- Botones que llaman a funciones JS para manejar el zoom y el desplazamiento de tiempo. -->
                     <button onclick="resetZoom('tempChart')">Restablecer Zoom</button>
+                    <!-- ⭐ BOTONES AÑADIDOS ⭐ -->
+                    <button onclick="buttonZoom('tempChart', -1)">Zoom In</button>
+                    <button onclick="buttonZoom('tempChart', 1)">Zoom Out</button>
+                    <!-- ⭐ FIN DE BOTONES AÑADIDOS ⭐ -->
                     <button onclick="moveTime('tempChart', 1)">Adelantar 1h</button>
                     <button onclick="moveTime('tempChart', -1)">Retrasar 1h</button>
                     <!-- Campo de entrada para que el usuario pueda saltar a una fecha y hora específica. -->
@@ -146,6 +150,10 @@
                 <div class="chart-controls">
                     <!-- Controles de zoom y desplazamiento para el gráfico de voltaje. -->
                     <button onclick="resetZoom('batteryChart')">Restablecer Zoom</button>
+                    <!-- ⭐ BOTONES AÑADIDOS ⭐ -->
+                    <button onclick="buttonZoom('batteryChart', -1)">Zoom In</button>
+                    <button onclick="buttonZoom('batteryChart', 1)">Zoom Out</button>
+                    <!-- ⭐ FIN DE BOTONES AÑADIDOS ⭐ -->
                     <button onclick="moveTime('batteryChart', 1)">Adelantar 1h</button>
                     <button onclick="moveTime('batteryChart', -1)">Retrasar 1h</button>
                     <label>Saltar a:</label>
