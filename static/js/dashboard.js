@@ -388,6 +388,13 @@ async function fetchAndDrawHistoricalData(forceReset = false) {
             min: firstTime - margin,
             max: endTime + margin
         };
+    } else if (window.tempChartInstance) {
+        // ⭐ NUEVO: Si no es un reseteo y el gráfico existe, MANTENER EL ZOOM ACTUAL
+        const scale = window.tempChartInstance.scales.x;
+        xAxisConfig = {
+            min: scale.min,
+            max: scale.max
+        };
     }
 
     // ----------------------------------------------------
@@ -504,4 +511,3 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchAndDrawHistoricalData(); 
     setInterval(fetchAndDrawHistoricalData, 30000); 
 });
-
