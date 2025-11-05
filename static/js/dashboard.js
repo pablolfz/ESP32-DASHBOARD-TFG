@@ -193,8 +193,9 @@ function drawChart(canvasId, datasets, labels, yAxisConfig = {}, xAxisConfig = {
                 padding: {
                     left: 0,
                     right: 10,
-                    top: 5,    
-                    bottom: 80 // ⭐ CAMBIO: Aumentado de 50 a 80 para el eje X rotado
+                    top: 5,     
+                    // ⭐ ESTA ES LA CORRECCIÓN: Volvemos a 50px ⭐
+                    bottom: 50 
                 }
             },
 
@@ -496,3 +497,4 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchAndDrawHistoricalData(); 
     setInterval(fetchAndDrawHistoricalData, 30000); 
 });
+
