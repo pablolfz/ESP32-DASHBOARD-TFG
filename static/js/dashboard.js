@@ -193,8 +193,8 @@ function drawChart(canvasId, datasets, labels, yAxisConfig = {}, xAxisConfig = {
                 padding: {
                     left: 0,
                     right: 10,
-                    top: 5,     
-                    bottom: 50 // Aumentado para dar espacio al eje X
+                    top: 5,    
+                    bottom: 80 // ⭐ CAMBIO: Aumentado de 50 a 80 para el eje X rotado
                 }
             },
 
@@ -490,7 +490,6 @@ async function fetchAndDrawHistoricalData(forceReset = false) {
     const lastDate = new Date(lastReading.timestamp).toLocaleDateString('es-ES');
     document.getElementById('currentTime').textContent = `${lastTime} (${lastDate})`;
 }
-
 
 // Inicializar la carga al cargar el documento y configurar el Polling
 document.addEventListener('DOMContentLoaded', () => {
