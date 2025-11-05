@@ -469,6 +469,8 @@ async function fetchAndDrawHistoricalData(forceReset = false) {
     }
     
     // Lógica de la gráfica de batería
+    // ⭐ CORRECCIÓN: Se ha restaurado el 'if' que comprueba si hay datos válidos.
+    if (validBattVolts.length > 0) { 
          const minBatt = Math.min(...validBattVolts);
          const maxBatt = Math.max(...validBattVolts);
          
