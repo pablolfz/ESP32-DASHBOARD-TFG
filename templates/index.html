@@ -132,7 +132,10 @@
                 </div>
 
                 <!-- Elemento Canvas: El lienzo donde se dibuja el gráfico de temperatura. -->
-                <canvas id="tempChart"></canvas> 
+                <!-- ⭐ ESTE ES EL CAMBIO: El canvas está dentro de un wrapper. -->
+                <div class="canvas-wrapper">
+                    <canvas id="tempChart"></canvas> 
+                </div>
             </div>
 
             <!-- CONTENEDOR DE GRÁFICO DE BATERÍA -->
@@ -151,7 +154,10 @@
                 </div>
 
                 <!-- Elemento Canvas: El lienzo donde se dibuja el gráfico de batería. -->
-                <canvas id="batteryChart"></canvas> 
+                <!-- ⭐ ESTE ES EL CAMBIO: El canvas está dentro de un wrapper. -->
+                <div class="canvas-wrapper">
+                    <canvas id="batteryChart"></canvas> 
+                </div>
             </div>
             
         </div>
