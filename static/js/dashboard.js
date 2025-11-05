@@ -374,28 +374,40 @@ async function fetchAndDrawHistoricalData(forceReset = false) {
     // ----------------------------------------------------
     const endTime = new Date(lastReading.timestamp).getTime();
     
-    let xAxisConfig = {};
-    
-    // ⭐ AJUSTE DINÁMICO DE ZOOM EN X: si es la carga inicial o forzada, ajusta al rango de datos.
+    // Configuración del eje X para el gráfico de TEMPERATURA
+    let tempXAxisConfig = {};
     if (forceReset || !window.tempChartInstance) {
         const firstTime = new Date(data[0].timestamp).getTime();
-        const rangeMS = endTime - firstTime;
-        
-        // Añadir 5 minutos de margen a cada lado
         const margin = 5 * 60 * 1000;
-        
-        xAxisConfig = {
+        tempXAxisConfig = {
             min: firstTime - margin,
             max: endTime + margin
         };
-    } else if (window.tempChartInstance) {
-        // ⭐ NUEVO: Si no es un reseteo y el gráfico existe, MANTENER EL ZOOM ACTUAL
+    } else { // Si no es un reseteo y el gráfico existe, MANTENER SU ZOOM
         const scale = window.tempChartInstance.scales.x;
-        xAxisConfig = {
+        tempXAxisConfig = {
             min: scale.min,
             max: scale.max
         };
     }
+
+    // Configuración del eje X para el gráfico de BATERÍA
+    let battXAxisConfig = {};
+    if (forceReset || !window.batteryChartInstance) {
+        const firstTime = new Date(data[0].timestamp).getTime();
+        const margin = 5 * 60 * 1000;
+        battXAxisConfig = {
+            min: firstTime - margin,
+            max: endTime + margin
+        };
+    } else { // Si no es un reseteo y el gráfico existe, MANTENER SU ZOOM
+        const scale = window.batteryChartInstance.scales.x;
+        battXAxisConfig = {
+            min: scale.min,
+            max: scale.max
+        };
+    }
+
 
     // ----------------------------------------------------
     // 3. CÁLCULO Y DIBUJO DE GRÁFICAS (Zoom Inteligente en Y)
@@ -434,7 +446,8 @@ async function fetchAndDrawHistoricalData(forceReset = false) {
             { label: 'Temperatura 2 (°C)', data: temperatures2, color: 'rgb(255, 99, 132)' }
         ];
         
-        drawChart('tempChart', tempDatasets, labels, tempAxisConfig, xAxisConfig); 
+        // Usar la configuración X específica
+        drawChart('tempChart', tempDatasets, labels, tempAxisConfig, tempXAxisConfig); 
 
     } else {
         // Forzar el dibujo del contenedor si no hay datos válidos (solo 999.0)
@@ -451,11 +464,11 @@ async function fetchAndDrawHistoricalData(forceReset = false) {
             { label: 'Temperatura 2 (°C)', data: temperatures2, color: 'rgb(255, 99, 132)' }
         ];
         
-        drawChart('tempChart', tempDatasets, labels, tempAxisConfig, xAxisConfig); 
+        // Usar la configuración X específica
+        drawChart('tempChart', tempDatasets, labels, tempAxisConfig, tempXAxisConfig); 
     }
     
-    // Lógica de la gráfica de batería (Sigue usando la lógica de zoom inteligente similar)
-    if (validBattVolts.length > 0) {
+    // Lógica de la gráfica de batería
          const minBatt = Math.min(...validBattVolts);
          const maxBatt = Math.max(...validBattVolts);
          
@@ -473,12 +486,14 @@ async function fetchAndDrawHistoricalData(forceReset = false) {
              { label: 'Voltaje de Batería (V)', data: batteryVolts, color: 'rgb(75, 192, 192)' }
          ];
 
-         drawChart('batteryChart', battDatasets, labels, battAxisConfig, xAxisConfig);
+         // Usar la configuración X específica
+         drawChart('batteryChart', battDatasets, labels, battAxisConfig, battXAxisConfig);
     } else {
          console.warn("ADVERTENCIA: No hay datos válidos para dibujar la batería.");
          const battDatasets = [{ label: 'Voltaje de Batería (V)', data: batteryVolts, color: 'rgb(75, 192, 192)' }];
          battAxisConfig = { min: 3.0, max: 4.5, title: { display: true, text: 'Voltaje (V)' } };
-         drawChart('batteryChart', battDatasets, labels, battAxisConfig, xAxisConfig);
+         // Usar la configuración X específica
+         drawChart('batteryChart', battDatasets, labels, battAxisConfig, battXAxisConfig);
     }
 
     // ----------------------------------------------------
