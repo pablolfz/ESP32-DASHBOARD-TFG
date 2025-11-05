@@ -8,7 +8,7 @@ const RESOLUTION_MARGIN = 0.5;
 const TEMP_MIN_SAFETY = -15;
 const TEMP_MAX_SAFETY = 60;
 
-// --- FUNCIONES DE GESTIÓN DE INTERFAZ ---
+// --- FUNCIONES DE GESTIÓN DE INTERFAZ Y CONTROL ---
 
 /**
  * Muestra mensajes de estado (éxito, error) en el contenedor de mensajes.
@@ -49,19 +49,18 @@ function buttonZoom(chartId, factor) {
 }
 
 /**
- * Restablece el zoom del gráfico a su rango inicial de tiempo (1 hora).
+ * Restablece el zoom del gráfico a su rango de tiempo inicial (rango completo de datos).
  */
 function resetZoom(chartId) {
     const chart = window[chartId + 'Instance'];
     if (chart) {
-        // Al resetear el zoom, volvemos a cargar los datos para recalcular el eje X
+        // Al resetear el zoom, volvemos a cargar los datos para recalcular el eje X dinámico
         fetchAndDrawHistoricalData(true); 
     }
 }
 
 /**
  * Desplaza el gráfico en el tiempo (pan).
- * amount: 1 (adelante), -1 (atrás).
  */
 function moveTime(chartId, amount) {
     const chart = window[chartId + 'Instance'];
@@ -125,7 +124,7 @@ function downloadData() {
  * Solicita la eliminación de registros de más de 30 días con confirmación.
  */
 function confirmCleanup() {
-    if (confirm("ADVERTENCIA: ¿Está seguro de que desea eliminar permanentemente todos los registros anteriores a 30 días? Esta acción es irreversible.")) {
+    if (confirm("ADVERTENCIA: ¿Está seguro de que desea eliminar permanentemente TODOS los registros ANTERIORES a 30 días? Esta acción es irreversible.")) {
         cleanupData();
     } else {
         showMessage('error', 'Limpieza cancelada por el usuario.');
@@ -145,13 +144,12 @@ async function cleanupData() {
 
         if (response.ok && result.status === 'success') {
             showMessage('success', result.message);
-            // Vuelve a cargar los datos para actualizar la vista después de la limpieza
             fetchAndDrawHistoricalData(true); 
         } else {
             showMessage('error', `Fallo en la limpieza: ${result.message || 'Error desconocido del servidor.'}`);
         }
     } catch (error) {
-        showMessage('error', `Error de conexión al servidor durante la limpieza: ${error.message}`);
+        showMessage('error', `Fallo de conexión al servidor durante la limpieza: ${error.message}`);
     }
 }
 
@@ -257,7 +255,7 @@ function drawChart(canvasId, datasets, labels, yAxisConfig = {}, xAxisConfig = {
                         }
                     }
                 },
-                // ⭐ Configuración del Plugin de Zoom ⭐
+                // ⭐ Configuración del Plugin de Zoom (Solo desplazamiento y zoom por botón) ⭐
                 zoom: {
                     pan: {
                         enabled: true,
