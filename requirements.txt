@@ -1,5 +1,3 @@
 # Archivo: requirements.txt
 Flask
 gunicorn
-# Dependencia para MongoDB
-pymongo
