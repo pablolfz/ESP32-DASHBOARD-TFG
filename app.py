@@ -41,6 +41,10 @@ def get_db_connection():
 
 def init_db():
     """Crea la tabla si no existe. Se llama al iniciar la app."""
+    # Aseguramos que el directorio existe (importante en algunos entornos)
+    if not os.path.exists(BASE_DIR):
+        os.makedirs(BASE_DIR)
+        
     conn = get_db_connection()
     try:
         conn.execute('''
@@ -55,7 +59,7 @@ def init_db():
             )
         ''')
         conn.commit()
-        print("BASE DE DATOS SQLITE INICIADA CORRECTAMENTE.")
+        print("BASE DE DATOS SQLITE VERIFICADA/INICIADA.")
     except Exception as e:
         print(f"Error iniciando DB: {e}")
     finally:
@@ -138,12 +142,13 @@ def index():
 
 
 # ==============================================================================
-# 4. ARRANQUE
+# 4. ARRANQUE E INICIALIZACIÓN
 # ==============================================================================
 
+# IMPORTANTE: Llamamos a init_db() AQUÍ, fuera del bloque main.
+# Esto asegura que la DB se crea incluso cuando Render arranca la app con Gunicorn.
+init_db()
+
 if __name__ == '__main__':
-    # Inicializar la DB antes de arrancar (crea el archivo si no existe)
-    init_db()
-    
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
