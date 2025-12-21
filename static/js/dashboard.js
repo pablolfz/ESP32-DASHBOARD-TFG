@@ -170,7 +170,7 @@ function drawChart(canvasId, datasets, labels, yAxisConfig = {}, xAxisConfig = {
         label: ds.label,
         data: ds.data.map((val, index) => ({ 
             x: labels[index], 
-            y: val         
+            y: val          
         })),
         borderColor: ds.color,
         backgroundColor: ds.color.replace('rgb', 'rgba').replace(')', ', 0.2)'),
@@ -193,7 +193,7 @@ function drawChart(canvasId, datasets, labels, yAxisConfig = {}, xAxisConfig = {
                 padding: {
                     left: 0,
                     right: 10,
-                    top: 5,     
+                    top: 5,      
                     // ⭐ AJUSTE: Reducido a 30px para menos espacio
                     bottom: 30 
                 }
@@ -237,7 +237,7 @@ function drawChart(canvasId, datasets, labels, yAxisConfig = {}, xAxisConfig = {
                     beginAtZero: false, 
                     title: {
                         display: true,
-                        text: datasets[0].label.includes('Temperatura') ? 'Temperatura (°C)' : datasets[0].label.includes('Voltaje') ? 'Voltaje (V)' : ''
+                        text: datasets[0].label.includes('Temperatura') ? 'Temperatura / Humedad' : datasets[0].label.includes('Presión') ? 'Presión (hPa)' : ''
                     },
                     ticks: {
                         // ⭐ AJUSTE: autoSkip en 'false' y maxTicksLimit para más líneas
@@ -355,26 +355,28 @@ async function fetchAndDrawHistoricalData(forceReset = false) {
     const lastReading = data[data.length - 1];
     
     // ----------------------------------------------------
-    // 1. EXTRACCIÓN Y FILTRADO DE DATOS
+    // 1. EXTRACCIÓN Y FILTRADO DE DATOS (ACTUALIZADO PARA LORA CSV)
     // ----------------------------------------------------
     
     const labels = data.map(item => item.timestamp); 
     
+    // Helper para filtrar nulos
     const mapAndFilter = (key) => data.map(item => {
         const val = item[key];
         return typeof val === 'number' && !isNaN(val) ? val : null;
     });
 
-    const temperatures1 = mapAndFilter('temp1'); 
-    const temperatures2 = mapAndFilter('temp2'); 
-    const batteryVolts = mapAndFilter('batt');   
+    // Mapeo corregido a las claves del ESP32 ('temp', 'hum', 'pres')
+    const temperatures = mapAndFilter('temp'); 
+    const humidities = mapAndFilter('hum'); 
+    const pressures = mapAndFilter('pres');    
     
     // ----------------------------------------------------
     // 2. CÁLCULO DE RANGO HORIZONTAL (Eje X)
     // ----------------------------------------------------
     const endTime = new Date(lastReading.timestamp).getTime();
     
-    // Configuración del eje X para el gráfico de TEMPERATURA
+    // Configuración del eje X para el gráfico de TEMP/HUM
     let tempXAxisConfig = {};
     if (forceReset || !window.tempChartInstance) {
         const firstTime = new Date(data[0].timestamp).getTime();
@@ -391,7 +393,7 @@ async function fetchAndDrawHistoricalData(forceReset = false) {
         };
     }
 
-    // Configuración del eje X para el gráfico de BATERÍA
+    // Configuración del eje X para el gráfico de PRESIÓN (antes batería)
     let battXAxisConfig = {};
     if (forceReset || !window.batteryChartInstance) {
         const firstTime = new Date(data[0].timestamp).getTime();
@@ -400,7 +402,7 @@ async function fetchAndDrawHistoricalData(forceReset = false) {
             min: firstTime - margin,
             max: endTime + margin
         };
-    } else { // Si no es un reseteo y el gráfico existe, MANTENER SU ZOOM
+    } else { 
         const scale = window.batteryChartInstance.scales.x;
         battXAxisConfig = {
             min: scale.min,
@@ -413,108 +415,94 @@ async function fetchAndDrawHistoricalData(forceReset = false) {
     // 3. CÁLCULO Y DIBUJO DE GRÁFICAS (Zoom Inteligente en Y)
     // ----------------------------------------------------
 
-    const validTemps1 = temperatures1.filter(v => v !== null && v !== 999.0);
-    const validTemps2 = temperatures2.filter(v => v !== null && v !== 999.0);
-    const validBattVolts = batteryVolts.filter(v => v !== null);
+    const validTemps = temperatures.filter(v => v !== null && v !== 999.0);
+    const validHums = humidities.filter(v => v !== null && v !== 999.0);
+    const validPressures = pressures.filter(v => v !== null);
 
     let tempAxisConfig = {}; 
-    let battAxisConfig = {};
+    let battAxisConfig = {}; // Se usa para presión ahora
 
-    const allValidTemps = [...validTemps1, ...validTemps2];
-
-    if (allValidTemps.length > 0) {
-        const minTemp = Math.min(...allValidTemps); 
-        const maxTemp = Math.max(...allValidTemps); 
+    if (validTemps.length > 0) {
+        const minTemp = Math.min(...validTemps); 
+        const maxTemp = Math.max(...validTemps); 
         
-        // ⭐ AJUSTE DE ZOOM INTELIGENTE EN Y (MARGEN DE 1.0) ⭐
+        // Ajuste de zoom Y para Temp
         tempAxisConfig = {
             min: Math.floor(minTemp - 1.0), 
-            max: Math.ceil(maxTemp + 1.0)
+            max: Math.ceil(maxTemp + 30.0) // Aumentamos margen superior para que quepa la humedad si está alta
         };
 
-        // Reglas de seguridad para el rango si es demasiado pequeño
-        if (tempAxisConfig.max - tempAxisConfig.min < 2.0) {
-            tempAxisConfig.max += 1.0;
-            tempAxisConfig.min -= 1.0;
-        }
-
         if (tempAxisConfig.min < TEMP_MIN_SAFETY) tempAxisConfig.min = TEMP_MIN_SAFETY;
-        if (tempAxisConfig.max > TEMP_MAX_SAFETY) tempAxisConfig.max = TEMP_MAX_SAFETY;
         
+        // Dataset Temperatura y Humedad juntos
         const tempDatasets = [
-            { label: 'Temperatura 1 (°C)', data: temperatures1, color: 'rgb(255, 165, 0)' },
-            { label: 'Temperatura 2 (°C)', data: temperatures2, color: 'rgb(255, 99, 132)' }
+            { label: 'Temperatura (°C)', data: temperatures, color: 'rgb(255, 165, 0)' },
+            { label: 'Humedad (%)', data: humidities, color: 'rgb(54, 162, 235)' }
         ];
         
-        // Usar la configuración X específica
         drawChart('tempChart', tempDatasets, labels, tempAxisConfig, tempXAxisConfig); 
 
     } else {
-        // Forzar el dibujo del contenedor si no hay datos válidos (solo 999.0)
-        console.warn("ADVERTENCIA: No hay datos válidos. Forzando visualización del eje.");
-
-        tempAxisConfig = { 
-            min: 10,  
-            max: 40,
-            title: { display: true, text: 'Temperatura (°C)' }
-        };
-        
+        // Fallback si no hay datos
+        tempAxisConfig = { min: 10, max: 40, title: { display: true, text: 'Temperatura' } };
         const tempDatasets = [
-            { label: 'Temperatura 1 (°C)', data: temperatures1, color: 'rgb(255, 165, 0)' },
-            { label: 'Temperatura 2 (°C)', data: temperatures2, color: 'rgb(255, 99, 132)' }
+             { label: 'Temperatura (°C)', data: temperatures, color: 'rgb(255, 165, 0)' }
         ];
-        
-        // Usar la configuración X específica
         drawChart('tempChart', tempDatasets, labels, tempAxisConfig, tempXAxisConfig); 
     }
     
-    // Lógica de la gráfica de batería
-    // ⭐ CORRECCIÓN: Se ha restaurado el 'if' que comprueba si hay datos válidos.
-    if (validBattVolts.length > 0) { 
-         const minBatt = Math.min(...validBattVolts);
-         const maxBatt = Math.max(...validBattVolts);
+    // --- GRÁFICO 2: PRESIÓN (Usando el canvas 'batteryChart') ---
+    if (validPressures.length > 0) { 
+         const minPres = Math.min(...validPressures);
+         const maxPres = Math.max(...validPressures);
          
-         battAxisConfig = {
-             min: minBatt - 0.05,
-             max: maxBatt + 0.05
+         battAxisConfig = { // Configuración Y para Presión
+             min: minPres - 2,
+             max: maxPres + 2,
+             title: { display: true, text: 'Presión (hPa)' }
          };
 
-         if (battAxisConfig.max - battAxisConfig.min < 0.1) {
-             battAxisConfig.max += 0.1;
-             battAxisConfig.min -= 0.1;
-         }
-         
-         const battDatasets = [
-             { label: 'Voltaje de Batería (V)', data: batteryVolts, color: 'rgb(75, 192, 192)' }
+         const presDatasets = [
+             { label: 'Presión (hPa)', data: pressures, color: 'rgb(153, 102, 255)' }
          ];
 
-         // Usar la configuración X específica
-         drawChart('batteryChart', battDatasets, labels, battAxisConfig, battXAxisConfig);
+         drawChart('batteryChart', presDatasets, labels, battAxisConfig, battXAxisConfig);
     } else {
-         console.warn("ADVERTENCIA: No hay datos válidos para dibujar la batería.");
-         const battDatasets = [{ label: 'Voltaje de Batería (V)', data: batteryVolts, color: 'rgb(75, 192, 192)' }];
-         battAxisConfig = { min: 3.0, max: 4.5, title: { display: true, text: 'Voltaje (V)' } };
-         // Usar la configuración X específica
-         drawChart('batteryChart', battDatasets, labels, battAxisConfig, battXAxisConfig);
+         battAxisConfig = { min: 900, max: 1100, title: { display: true, text: 'Presión (hPa)' } };
+         const presDatasets = [{ label: 'Presión (hPa)', data: pressures, color: 'rgb(153, 102, 255)' }];
+         drawChart('batteryChart', presDatasets, labels, battAxisConfig, battXAxisConfig);
     }
 
     // ----------------------------------------------------
     // 4. ACTUALIZACIÓN DE CAJAS (Contenido y Hora)
     // ----------------------------------------------------
     
-    const currentTemp1 = lastReading.temp1 && lastReading.temp1 !== 999.0 ? lastReading.temp1.toFixed(1) : "Error";
-    const currentTemp2 = lastReading.temp2 && lastReading.temp2 !== 999.0 ? lastReading.temp2.toFixed(1) : "Error";
-    const currentRssi = lastReading.rssi ? lastReading.rssi : "No data";
-    const currentBatteryPct = lastReading.pct !== undefined && lastReading.pct !== null ? Math.round(lastReading.pct) : "No data";
-    const currentBatteryVolts = lastReading.batt ? lastReading.batt.toFixed(2) : "No data";
+    // Usamos las claves correctas: temp, hum, pres
+    const currentTemp = lastReading.temp !== undefined ? lastReading.temp.toFixed(1) : "N/A";
+    const currentHum = lastReading.hum !== undefined ? lastReading.hum.toFixed(1) : "N/A";
+    const currentPres = lastReading.pres !== undefined ? lastReading.pres.toFixed(1) : "N/A";
+    const currentRssi = lastReading.rssi ? lastReading.rssi : "N/A";
     
-    document.getElementById('current-temp1-value').textContent = `${currentTemp1} °C`;
-    document.getElementById('current-temp2-value').textContent = `${currentTemp2} °C`; 
-    document.getElementById('current-signal-value').textContent = `${currentRssi} dBm`; 
-    document.getElementById('current-battery-pct-value').textContent = `${currentBatteryPct} %`;
-    document.getElementById('current-battery-volt-value').textContent = `${currentBatteryVolts} V`;
+    // Mapeamos a los IDs existentes en tu HTML
+    // Caja 1 (Temp)
+    document.getElementById('current-temp1-value').textContent = `${currentTemp} °C`;
+    
+    // Caja 2 (Ahora Humedad) - Si usas temp2 en HTML, lo sobreescribimos visualmente
+    const temp2Label = document.getElementById('current-temp2-value');
+    if(temp2Label) temp2Label.textContent = `${currentHum} %`; 
 
-    document.getElementById('current-humidity-value').textContent = 'N/A';
+    // Caja Humedad explícita (si existe en HTML)
+    const humLabel = document.getElementById('current-humidity-value');
+    if(humLabel) humLabel.textContent = `${currentHum} %`;
+
+    // Caja Voltaje/Batería (Ahora Presión)
+    const battLabel = document.getElementById('current-battery-volt-value');
+    if(battLabel) battLabel.textContent = `${currentPres} hPa`;
+    
+    const battPctLabel = document.getElementById('current-battery-pct-value');
+    if(battPctLabel) battPctLabel.textContent = ""; // Limpiamos porcentaje si no aplica
+
+    document.getElementById('current-signal-value').textContent = `${currentRssi} dBm`; 
     
     updateSignalIcon(currentRssi); 
     
