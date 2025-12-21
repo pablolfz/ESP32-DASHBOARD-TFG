@@ -1,13 +1,14 @@
-# app.py --- VERSIÓN SQLITE (Sin MongoDB externo)
+# app.py --- VERSIÓN POSTGRESQL (Supabase / Neon / Render)
 
 from flask import Flask, request, jsonify, render_template
 from datetime import datetime
-import sqlite3 # Librería estándar para base de datos en archivo
 import os 
 from pathlib import Path
+import psycopg2 # Adaptador para PostgreSQL
+from psycopg2.extras import RealDictCursor # Para acceder a columnas por nombre
 
 # ==============================================================================
-# 1. FUNCIONES AUXILIARES DE VALIDACIÓN
+# 1. FUNCIONES AUXILIARES
 # ==============================================================================
 
 def safe_float(value):
@@ -20,7 +21,6 @@ def safe_float(value):
 
 # --- CONFIGURACIÓN DE FLASK ---
 BASE_DIR = Path(__file__).parent.absolute()
-DB_FILE = BASE_DIR / 'station_data.db' # El archivo de base de datos se creará aquí
 
 app = Flask(
     __name__, 
@@ -29,41 +29,46 @@ app = Flask(
 )
 
 # ==============================================================================
-# 2. CONFIGURACIÓN DE SQLITE
+# 2. CONFIGURACIÓN DE POSTGRESQL
 # ==============================================================================
 
+# Render inyectará la URL de la base de datos aquí.
+# Ejemplo: postgres://usuario:password@host:port/database
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
 def get_db_connection():
-    """Abre conexión con el archivo SQLite y configura el formato de filas."""
-    conn = sqlite3.connect(DB_FILE)
-    # Esto permite acceder a las columnas por nombre (row['temp']) en lugar de índice
-    conn.row_factory = sqlite3.Row 
+    """Abre conexión con PostgreSQL."""
+    if not DATABASE_URL:
+        raise Exception("CRÍTICO: La variable de entorno DATABASE_URL no está configurada.")
+    
+    conn = psycopg2.connect(DATABASE_URL)
     return conn
 
 def init_db():
-    """Crea la tabla si no existe. Se llama al iniciar la app."""
-    # Aseguramos que el directorio existe (importante en algunos entornos)
-    if not os.path.exists(BASE_DIR):
-        os.makedirs(BASE_DIR)
-        
-    conn = get_db_connection()
+    """Crea la tabla 'readings' si no existe en la nube."""
     try:
-        conn.execute('''
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Sentencia SQL para crear la tabla
+        cur.execute('''
             CREATE TABLE IF NOT EXISTS readings (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                timestamp TEXT NOT NULL,
+                id SERIAL PRIMARY KEY,
+                timestamp TIMESTAMP NOT NULL,
                 device_id TEXT,
                 temp REAL,
                 hum REAL,
                 pres REAL,
                 rssi REAL
-            )
+            );
         ''')
+        
         conn.commit()
-        print("BASE DE DATOS SQLITE VERIFICADA/INICIADA.")
-    except Exception as e:
-        print(f"Error iniciando DB: {e}")
-    finally:
+        cur.close()
         conn.close()
+        print("BASE DE DATOS POSTGRESQL INICIADA CORRECTAMENTE.")
+    except Exception as e:
+        print(f"Error iniciando PostgreSQL: {e}")
 
 # ==============================================================================
 # 3. ENDPOINTS DE LA API
@@ -84,23 +89,27 @@ def receive_data():
         rssi_val = safe_float(data.get('rssi'))
 
         if temp_val is None:
-            return jsonify({"status": "warning", "message": "Invalid data: temp is required"}), 200
+            return jsonify({"status": "warning", "message": "Falta temperatura"}), 200
 
-        # Guardar en SQLite
+        # Guardar en PostgreSQL
         conn = get_db_connection()
-        conn.execute(
-            'INSERT INTO readings (timestamp, device_id, temp, hum, pres, rssi) VALUES (?, ?, ?, ?, ?, ?)',
-            (datetime.now().isoformat(), device_id, temp_val, hum_val, pres_val, rssi_val)
+        cur = conn.cursor()
+        
+        cur.execute(
+            'INSERT INTO readings (timestamp, device_id, temp, hum, pres, rssi) VALUES (%s, %s, %s, %s, %s, %s)',
+            (datetime.now(), device_id, temp_val, hum_val, pres_val, rssi_val)
         )
+        
         conn.commit()
+        cur.close()
         conn.close()
         
-        print(f"DEBUG: Datos guardados en SQLite.")
+        print(f"DEBUG: Datos guardados en la nube (Postgres).")
         return jsonify({"status": "success", "message": "Data logged successfully"}), 200
         
     except Exception as e:
-        print(f"CRÍTICO: Error en SQLite: {e}")
-        return jsonify({"status": "error", "message": "Server failed to log data"}), 500
+        print(f"CRÍTICO: Error PostgreSQL: {e}")
+        return jsonify({"status": "error", "message": "Database error"}), 500
 
 
 # --- OBTENER HISTORIAL (GET) ---
@@ -108,13 +117,23 @@ def receive_data():
 def get_history():
     try:
         conn = get_db_connection()
+        # Usamos RealDictCursor para que los resultados sean diccionarios (como JSON)
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
         # Seleccionar las últimas 200 lecturas
-        cursor = conn.execute('SELECT * FROM readings ORDER BY timestamp DESC LIMIT 200')
-        rows = cursor.fetchall()
+        cur.execute('SELECT * FROM readings ORDER BY timestamp DESC LIMIT 200')
+        rows = cur.fetchall()
+        
+        cur.close()
         conn.close()
         
-        # Convertir filas SQLite a lista de diccionarios para JSON
-        history_data = [dict(row) for row in rows]
+        # Convertir objetos datetime a string ISO para que el JS lo entienda
+        history_data = []
+        for row in rows:
+            row_dict = dict(row)
+            if isinstance(row_dict['timestamp'], datetime):
+                row_dict['timestamp'] = row_dict['timestamp'].isoformat()
+            history_data.append(row_dict)
             
         return jsonify(list(reversed(history_data))) 
     
@@ -127,11 +146,13 @@ def get_history():
 def cleanup_data():
     try:
         conn = get_db_connection()
-        cursor = conn.execute('DELETE FROM readings')
+        cur = conn.cursor()
+        cur.execute('DELETE FROM readings') # Borrar todo
+        deleted_count = cur.rowcount
         conn.commit()
-        deleted_count = cursor.rowcount
+        cur.close()
         conn.close()
-        return jsonify({"status": "success", "message": f"Deleted {deleted_count} records"}), 200
+        return jsonify({"status": "success", "message": f"Eliminados {deleted_count} registros"}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -142,13 +163,18 @@ def index():
 
 
 # ==============================================================================
-# 4. ARRANQUE E INICIALIZACIÓN
+# 4. ARRANQUE
 # ==============================================================================
 
-# IMPORTANTE: Llamamos a init_db() AQUÍ, fuera del bloque main.
-# Esto asegura que la DB se crea incluso cuando Render arranca la app con Gunicorn.
-init_db()
+# Intentamos iniciar la DB al cargar el script
+if os.environ.get("DATABASE_URL"):
+    init_db()
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
+
