@@ -41,11 +41,13 @@ def get_db_connection():
     if not DATABASE_URL:
         raise Exception("CRÍTICO: La variable de entorno DATABASE_URL no está configurada.")
     
-    conn = psycopg2.connect(DATABASE_URL)
+    # sslmode='require' es vital para conexiones seguras en la nube (Supabase/Render)
+    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     return conn
 
 def init_db():
     """Crea la tabla 'readings' si no existe en la nube."""
+    msg = ""
     try:
         conn = get_db_connection()
         cur = conn.cursor()
@@ -66,13 +68,26 @@ def init_db():
         conn.commit()
         cur.close()
         conn.close()
-        print("BASE DE DATOS POSTGRESQL INICIADA CORRECTAMENTE.")
+        msg = "BASE DE DATOS POSTGRESQL INICIADA CORRECTAMENTE."
+        print(msg)
+        return True, msg
     except Exception as e:
-        print(f"Error iniciando PostgreSQL: {e}")
+        msg = f"Error iniciando PostgreSQL: {e}"
+        print(msg)
+        return False, msg
 
 # ==============================================================================
 # 3. ENDPOINTS DE LA API
 # ==============================================================================
+
+# --- NUEVO: INICIALIZACIÓN MANUAL (Por si falla la automática) ---
+@app.route('/api/init-db', methods=['GET'])
+def manual_init_db():
+    success, message = init_db()
+    if success:
+        return jsonify({"status": "success", "message": message}), 200
+    else:
+        return jsonify({"status": "error", "message": message}), 500
 
 # --- RECIBIR DATOS (POST) ---
 @app.route('/api/data', methods=['POST'])
@@ -109,7 +124,7 @@ def receive_data():
         
     except Exception as e:
         print(f"CRÍTICO: Error PostgreSQL: {e}")
-        return jsonify({"status": "error", "message": "Database error"}), 500
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 # --- OBTENER HISTORIAL (GET) ---
@@ -167,14 +182,10 @@ def index():
 # ==============================================================================
 
 # Intentamos iniciar la DB al cargar el script
+# (Si falla aquí silenciosamente, usa /api/init-db para depurar)
 if os.environ.get("DATABASE_URL"):
     init_db()
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
-
