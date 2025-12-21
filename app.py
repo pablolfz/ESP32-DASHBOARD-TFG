@@ -1,21 +1,16 @@
-# app.py --- CORREGIDO PARA LORA (Temp, Hum, Pres)
+# app.py --- VERSIÓN SQLITE (Sin MongoDB externo)
 
-# Importamos librerias necesarias
 from flask import Flask, request, jsonify, render_template
 from datetime import datetime
-from pymongo import MongoClient
+import sqlite3 # Librería estándar para base de datos en archivo
 import os 
 from pathlib import Path
 
 # ==============================================================================
-# 1. FUNCIONES AUXILIARES DE VALIDACIÓN Y CONFIGURACIÓN
+# 1. FUNCIONES AUXILIARES DE VALIDACIÓN
 # ==============================================================================
 
 def safe_float(value):
-    """
-    Intenta convertir un valor de entrada a flotante. 
-    Devuelve None si el valor es None o si la conversión falla.
-    """
     if value is None:
         return None
     try:
@@ -23,9 +18,9 @@ def safe_float(value):
     except (TypeError, ValueError):
         return None
 
-
 # --- CONFIGURACIÓN DE FLASK ---
 BASE_DIR = Path(__file__).parent.absolute()
+DB_FILE = BASE_DIR / 'station_data.db' # El archivo de base de datos se creará aquí
 
 app = Flask(
     __name__, 
@@ -34,122 +29,121 @@ app = Flask(
 )
 
 # ==============================================================================
-# 2. CONFIGURACIÓN DE MONGODB
+# 2. CONFIGURACIÓN DE SQLITE
 # ==============================================================================
 
-# IMPORTANTE: En Render, debes tener la variable de entorno MONGO_URI configurada.
-# Si no la tienes, este código intentará conectar a localhost y fallará en la nube.
-MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017/") 
-DB_NAME = "lora_dashboard_db" 
-COLLECTION_NAME = "readings"  
+def get_db_connection():
+    """Abre conexión con el archivo SQLite y configura el formato de filas."""
+    conn = sqlite3.connect(DB_FILE)
+    # Esto permite acceder a las columnas por nombre (row['temp']) en lugar de índice
+    conn.row_factory = sqlite3.Row 
+    return conn
 
-def get_mongo_collection():
-    """
-    Inicializa la conexión de MongoDB y devuelve el objeto 'collection'.
-    """
+def init_db():
+    """Crea la tabla si no existe. Se llama al iniciar la app."""
+    conn = get_db_connection()
     try:
-        client = MongoClient(MONGO_URI) 
-        db = client[DB_NAME]
-        return db[COLLECTION_NAME]
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS readings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                device_id TEXT,
+                temp REAL,
+                hum REAL,
+                pres REAL,
+                rssi REAL
+            )
+        ''')
+        conn.commit()
+        print("BASE DE DATOS SQLITE INICIADA CORRECTAMENTE.")
     except Exception as e:
-        print(f"CRÍTICO: Fallo al conectar a MongoDB: {e}")
-        raise
+        print(f"Error iniciando DB: {e}")
+    finally:
+        conn.close()
 
 # ==============================================================================
-# 3. ENDPOINTS DE LA API (Rutas de Servicio)
+# 3. ENDPOINTS DE LA API
 # ==============================================================================
 
-# --- ENDPOINT 1: RECIBIR DATOS DEL ESP32 (POST) ---
+# --- RECIBIR DATOS (POST) ---
 @app.route('/api/data', methods=['POST'])
 def receive_data():
-    """
-    Maneja las peticiones POST enviadas por el nodo LoRaWAN/ESP32.
-    ESPERA JSON: {"id": "...", "temp": X, "hum": Y, "pres": Z, "rssi": W}
-    """
     try:
-        readings_collection = get_mongo_collection()
-        
         data = request.get_json()
-        print(f"DEBUG: Datos recibidos del dispositivo: {data}")
+        print(f"DEBUG: Datos recibidos: {data}")
 
-        # --- CORRECCIÓN: LEER LAS CLAVES NUEVAS (temp, hum, pres) ---
+        # Leer datos
         device_id = data.get('id', 'unknown')
         temp_val = safe_float(data.get('temp'))
         hum_val  = safe_float(data.get('hum'))
         pres_val = safe_float(data.get('pres'))
         rssi_val = safe_float(data.get('rssi'))
 
-        # Validación: Al menos la temperatura debe ser válida para guardar
         if temp_val is None:
-            print("DEBUG: Datos inválidos (Falta temperatura)")
             return jsonify({"status": "warning", "message": "Invalid data: temp is required"}), 200
 
-        # Construcción del documento
-        reading = {
-            "timestamp": datetime.now().isoformat(),
-            "device_id": device_id,
-            "temp": temp_val, # Guardamos como 'temp' para coincidir con JS
-            "hum":  hum_val,  # Guardamos como 'hum'
-            "pres": pres_val, # Guardamos como 'pres'
-            "rssi": rssi_val
-        }
+        # Guardar en SQLite
+        conn = get_db_connection()
+        conn.execute(
+            'INSERT INTO readings (timestamp, device_id, temp, hum, pres, rssi) VALUES (?, ?, ?, ?, ?, ?)',
+            (datetime.now().isoformat(), device_id, temp_val, hum_val, pres_val, rssi_val)
+        )
+        conn.commit()
+        conn.close()
         
-        readings_collection.insert_one(reading)
-        
-        print(f"DEBUG: Datos guardados en MongoDB. OK.")
+        print(f"DEBUG: Datos guardados en SQLite.")
         return jsonify({"status": "success", "message": "Data logged successfully"}), 200
         
     except Exception as e:
-        print(f"CRÍTICO: Error al guardar datos o conectar: {e}")
+        print(f"CRÍTICO: Error en SQLite: {e}")
         return jsonify({"status": "error", "message": "Server failed to log data"}), 500
 
 
-# --- ENDPOINT 2: DEVOLVER DATOS AL JAVASCRIPT (GET) ---
+# --- OBTENER HISTORIAL (GET) ---
 @app.route('/api/history')
 def get_history():
-    """
-    Recupera las últimas 200 lecturas.
-    """
     try:
-        readings_collection = get_mongo_collection()
-
-        cursor = readings_collection.find(
-            {}, 
-            {"_id": 0} 
-        ).sort("timestamp", -1).limit(200) 
+        conn = get_db_connection()
+        # Seleccionar las últimas 200 lecturas
+        cursor = conn.execute('SELECT * FROM readings ORDER BY timestamp DESC LIMIT 200')
+        rows = cursor.fetchall()
+        conn.close()
         
-        history_data = list(cursor) 
+        # Convertir filas SQLite a lista de diccionarios para JSON
+        history_data = [dict(row) for row in rows]
             
         return jsonify(list(reversed(history_data))) 
     
     except Exception as e:
-        print(f"Error fetching history from MongoDB: {e}")
+        print(f"Error fetching history: {e}")
         return jsonify([]), 500
 
-# --- ENDPOINT 3: LIMPIEZA DE DATOS (OPCIONAL) ---
+# --- LIMPIEZA DE DATOS ---
 @app.route('/api/cleanup', methods=['POST'])
 def cleanup_data():
-    """
-    Borra datos antiguos (Endpoint simple para el botón de la web).
-    """
     try:
-        readings_collection = get_mongo_collection()
-        # Borra todo para reiniciar (o podrías filtrar por fecha)
-        result = readings_collection.delete_many({})
-        return jsonify({"status": "success", "message": f"Deleted {result.deleted_count} records"}), 200
+        conn = get_db_connection()
+        cursor = conn.execute('DELETE FROM readings')
+        conn.commit()
+        deleted_count = cursor.rowcount
+        conn.close()
+        return jsonify({"status": "success", "message": f"Deleted {deleted_count} records"}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-# --- ENDPOINT 4: SERVIR LA PÁGINA WEB ---
+# --- PÁGINA WEB ---
 @app.route('/')
 def index():
     return render_template('index.html')
 
 
 # ==============================================================================
-# 4. ARRANQUE DEL SERVIDOR
+# 4. ARRANQUE
 # ==============================================================================
 
 if __name__ == '__main__':
+    # Inicializar la DB antes de arrancar (crea el archivo si no existe)
+    init_db()
+    
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
