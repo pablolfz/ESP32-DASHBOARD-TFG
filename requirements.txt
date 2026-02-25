@@ -1,4 +1,4 @@
 # Archivo: requirements.txt
-Flask
+flask
+requests
 gunicorn
-psycopg2-binary
