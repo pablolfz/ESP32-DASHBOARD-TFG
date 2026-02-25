@@ -39,14 +39,17 @@ def get_db_connection():
     return conn
 
 def init_db():
-    """Crea la tabla adaptada a los 6 sensores (AHT + 4 Dallas)."""
+    """Borra la tabla existente y la crea de nuevo con todas las columnas correctas."""
     try:
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Nueva estructura de tabla
+        # 1. ELIMINAR LA TABLA ANTIGUA (Para limpiar errores de columnas faltantes)
+        cur.execute('DROP TABLE IF EXISTS readings CASCADE;')
+        
+        # 2. CREAR LA TABLA CON LA ESTRUCTURA EXACTA QUE NECESITAMOS
         cur.execute('''
-            CREATE TABLE IF NOT EXISTS readings (
+            CREATE TABLE readings (
                 id SERIAL PRIMARY KEY,
                 timestamp TIMESTAMP NOT NULL,
                 device_id TEXT,
@@ -63,12 +66,19 @@ def init_db():
         conn.commit()
         cur.close()
         conn.close()
-        print("BASE DE DATOS INICIADA (Estructura de 6 sensores).")
-        return True, "DB OK"
+        print("✅ BASE DE DATOS RECONSTRUIDA: Tabla 'readings' creada con columna 'timestamp'.")
+        return True, "Base de datos reconstruida con éxito."
     except Exception as e:
-        print(f"Error iniciando PostgreSQL: {e}")
+        print(f"❌ Error reconstruyendo DB: {e}")
         return False, str(e)
 
+@app.route('/api/init-db', methods=['GET'])
+def manual_init_db():
+    success, message = init_db()
+    if success:
+        return jsonify({"status": "success", "message": message}), 200
+    else:
+        return jsonify({"status": "error", "message": message}), 500
 # ==============================================================================
 # 3. ENDPOINTS DE LA API
 # ==============================================================================
@@ -191,3 +201,4 @@ if os.environ.get("DATABASE_URL"):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
+
