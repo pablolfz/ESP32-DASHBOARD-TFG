@@ -1,119 +1,121 @@
 /**
- * Dashboard Multi-sensor LoRa - Versión Firebase
- * Maneja la obtención de datos, renderizado de gráficas y actualización en tiempo real.
+ * Dashboard Multi-sensor LoRa - Versión Firebase Blindada
  */
 
 let tempChart, batteryChart;
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Configuración inicial de los gráficos
     initCharts();
-    
-    // Carga inicial de datos
     fetchAndDrawHistoricalData();
 
-    // PUNTO 2: Refresco automático cada 30 segundos
-    setInterval(() => {
-        console.log("Actualizando datos automáticamente...");
-        fetchAndDrawHistoricalData();
-    }, 30000); 
+    // Refresco automático
+    setInterval(fetchAndDrawHistoricalData, 30000); 
 });
 
-/**
- * Inicializa las instancias de Chart.js
- */
 function initCharts() {
     const commonOptions = {
         responsive: true,
         maintainAspectRatio: false,
         scales: {
-            x: { type: 'time', time: { unit: 'minute', displayFormats: { minute: 'HH:mm' } } },
+            x: { type: 'time', time: { unit: 'minute' } },
             y: { beginAtZero: false }
-        },
-        plugins: { legend: { position: 'bottom' } }
+        }
     };
 
-    const ctxTemp = document.getElementById('tempChart').getContext('2d');
-    tempChart = new Chart(ctxTemp, {
-        type: 'line',
-        data: { datasets: [] },
-        options: commonOptions
-    });
-
-    const ctxHum = document.getElementById('batteryChart').getContext('2d');
-    batteryChart = new Chart(ctxHum, {
-        type: 'line',
-        data: { datasets: [] },
-        options: { ...commonOptions, scales: { ...commonOptions.scales, y: { min: 0, max: 100 } } }
-    });
-}
-
-/**
- * Obtiene el historial desde Flask (que lee de Firebase) y actualiza la UI
- */
-async function fetchAndDrawHistoricalData() {
-    try {
-        const response = await fetch('/api/history');
-        if (!response.ok) throw new Error('Error al obtener historial');
-        
-        const data = await response.json();
-        if (!data || data.length === 0) return;
-
-        // 1. Preparar etiquetas (Eje X)
-        const labels = data.map(item => new Date(item.timestamp));
-        const lastReading = data[data.length - 1];
-
-        // 2. Helper para extraer datos filtrando errores de sonda (-127)
-        const getCleanData = (key) => data.map(item => {
-            const val = item[key];
-            return (val !== null && val > -120) ? val : null;
+    const ctxTemp = document.getElementById('tempChart')?.getContext('2d');
+    if (ctxTemp) {
+        tempChart = new Chart(ctxTemp, {
+            type: 'line',
+            data: { datasets: [] },
+            options: commonOptions
         });
+    }
 
-        // 3. Actualizar Gráfica de Temperaturas
-        tempChart.data.labels = labels;
-        tempChart.data.datasets = [
-            { label: 'Ambiente', data: getCleanData('t_aht'), borderColor: '#ff6384', tension: 0.3 },
-            { label: 'Sonda 1', data: getCleanData('t1'), borderColor: '#ff9f40', tension: 0.3 },
-            { label: 'Sonda 2', data: getCleanData('t2'), borderColor: '#4bc0c0', tension: 0.3 },
-            { label: 'Sonda 3', data: getCleanData('t3'), borderColor: '#9966ff', tension: 0.3 },
-            { label: 'Sonda 4', data: getCleanData('t4'), borderColor: '#c9cbcf', tension: 0.3 }
-        ];
-        tempChart.update('none');
-
-        // 4. Actualizar Gráfica de Humedad
-        batteryChart.data.labels = labels;
-        batteryChart.data.datasets = [
-            { label: 'Humedad %', data: getCleanData('h_aht'), borderColor: '#36a2eb', fill: true, backgroundColor: 'rgba(54, 162, 235, 0.1)' }
-        ];
-        batteryChart.update('none');
-
-        // 5. Actualizar Cajas de Datos Actuales (Cards)
-        updateCards(lastReading);
-
-    } catch (error) {
-        console.error('Error en el dashboard:', error);
+    const ctxHum = document.getElementById('batteryChart')?.getContext('2d');
+    if (ctxHum) {
+        batteryChart = new Chart(ctxHum, {
+            type: 'line',
+            data: { datasets: [] },
+            options: { ...commonOptions, scales: { y: { min: 0, max: 100 } } }
+        });
     }
 }
 
-/**
- * Actualiza los valores de texto en las tarjetas superiores
- */
-function updateCards(last) {
-    const fmt = (val) => (val !== null && val !== undefined) ? val.toFixed(1) : "--";
-    const fmtSonda = (val) => (val === null || val <= -120) ? "ERR" : val.toFixed(1);
+async function fetchAndDrawHistoricalData() {
+    try {
+        const response = await fetch('/api/history');
+        const rawData = await response.json();
+        
+        // DEBUG: Mira la consola del navegador (F12) para ver si llega esto
+        console.log("Datos recibidos de la API:", rawData);
 
-    // Valores principales
-    document.getElementById('current-temp1-value').textContent = `${fmt(last.t_aht)} °C`;
-    document.getElementById('current-humidity-value').textContent = `${fmt(last.h_aht)} %`;
-    document.getElementById('current-signal-value').textContent = `${last.rssi || "--"} dBm`;
+        // Convertir a array si Firebase envió un objeto
+        let data = Array.isArray(rawData) ? rawData : Object.values(rawData);
+        
+        if (!data || data.length === 0) {
+            console.warn("La base de datos está vacía.");
+            return;
+        }
 
-    // Sondas Dallas
-    if(document.getElementById('val-t1')) document.getElementById('val-t1').textContent = fmtSonda(last.t1);
-    if(document.getElementById('val-t2')) document.getElementById('val-t2').textContent = fmtSonda(last.t2);
-    if(document.getElementById('val-t3')) document.getElementById('val-t3').textContent = fmtSonda(last.t3);
-    if(document.getElementById('val-t4')) document.getElementById('val-t4').textContent = fmtSonda(last.t4);
+        // Ordenar por fecha por si Firebase los mandó desordenados
+        data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-    // Hora de actualización
-    const fecha = new Date(last.timestamp);
-    document.getElementById('currentTime').textContent = `Sincronizado: ${fecha.toLocaleTimeString()}`;
+        const lastReading = data[data.length - 1];
+        const labels = data.map(item => new Date(item.timestamp));
+
+        const getCleanData = (key) => data.map(item => {
+            const val = parseFloat(item[key]);
+            return (!isNaN(val) && val > -120) ? val : null;
+        });
+
+        // Actualizar Gráficas
+        if (tempChart) {
+            tempChart.data.labels = labels;
+            tempChart.data.datasets = [
+                { label: 'Ambiente', data: getCleanData('t_aht'), borderColor: '#ff6384' },
+                { label: 'S1', data: getCleanData('t1'), borderColor: '#ff9f40' },
+                { label: 'S2', data: getCleanData('t2'), borderColor: '#4bc0c0' },
+                { label: 'S3', data: getCleanData('t3'), borderColor: '#9966ff' },
+                { label: 'S4', data: getCleanData('t4'), borderColor: '#c9cbcf' }
+            ];
+            tempChart.update('none');
+        }
+
+        if (batteryChart) {
+            batteryChart.data.labels = labels;
+            batteryChart.data.datasets = [
+                { label: 'Humedad %', data: getCleanData('h_aht'), borderColor: '#36a2eb' }
+            ];
+            batteryChart.update('none');
+        }
+
+        // Actualizar tarjetas (Cards) con IDs genéricas por si acaso
+        updateUI(lastReading);
+
+    } catch (error) {
+        console.error('Error cargando datos:', error);
+    }
+}
+
+function updateUI(last) {
+    const setSafeText = (id, text) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+    };
+
+    const fmt = (val) => (val != null && val > -120) ? parseFloat(val).toFixed(1) : "--";
+
+    setSafeText('current-temp1-value', `${fmt(last.t_aht)} °C`);
+    setSafeText('current-humidity-value', `${fmt(last.h_aht)} %`);
+    setSafeText('current-signal-value', `${last.rssi || "--"} dBm`);
+    
+    // IDs de las sondas Dallas
+    setSafeText('val-t1', fmt(last.t1));
+    setSafeText('val-t2', fmt(last.t2));
+    setSafeText('val-t3', fmt(last.t3));
+    setSafeText('val-t4', fmt(last.t4));
+
+    if (last.timestamp) {
+        setSafeText('currentTime', `Última: ${new Date(last.timestamp).toLocaleTimeString()}`);
+    }
 }
