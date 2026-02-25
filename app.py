@@ -1,5 +1,3 @@
-# app.py --- VERSIÓN ACTUALIZADA (Soporte para temp_local)
-
 from flask import Flask, request, jsonify, render_template
 from datetime import datetime
 import os 
@@ -41,36 +39,35 @@ def get_db_connection():
     return conn
 
 def init_db():
-    """Crea la tabla si no existe (incluyendo columna temp_local)."""
-    msg = ""
+    """Crea la tabla adaptada a los 6 sensores (AHT + 4 Dallas)."""
     try:
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Tabla actualizada con temp_local
+        # Nueva estructura de tabla
         cur.execute('''
             CREATE TABLE IF NOT EXISTS readings (
                 id SERIAL PRIMARY KEY,
                 timestamp TIMESTAMP NOT NULL,
                 device_id TEXT,
-                temp REAL,
-                hum REAL,
-                pres REAL,
-                rssi REAL,
-                temp_local REAL
+                t_aht REAL,
+                h_aht REAL,
+                t1 REAL,
+                t2 REAL,
+                t3 REAL,
+                t4 REAL,
+                rssi REAL
             );
         ''')
         
         conn.commit()
         cur.close()
         conn.close()
-        msg = "BASE DE DATOS INICIADA (Soporte temp_local)."
-        print(msg)
-        return True, msg
+        print("BASE DE DATOS INICIADA (Estructura de 6 sensores).")
+        return True, "DB OK"
     except Exception as e:
-        msg = f"Error iniciando PostgreSQL: {e}"
-        print(msg)
-        return False, msg
+        print(f"Error iniciando PostgreSQL: {e}")
+        return False, str(e)
 
 # ==============================================================================
 # 3. ENDPOINTS DE LA API
@@ -79,7 +76,7 @@ def init_db():
 @app.route('/api/init-db', methods=['GET'])
 def manual_init_db():
     success, message = init_db()
-    return jsonify({"status": "success" if success else "error", "message": message}), 200 if success else 500
+    return jsonify({"status": "success" if success else "error", "message": message})
 
 # --- RECIBIR DATOS (POST) ---
 @app.route('/api/data', methods=['POST'])
@@ -88,38 +85,36 @@ def receive_data():
         data = request.get_json()
         print(f"DEBUG: Datos recibidos: {data}")
 
-        # Leer datos (incluyendo el nuevo temp_local)
-        device_id = data.get('id', 'unknown')
-        temp_val = safe_float(data.get('temp'))
-        hum_val  = safe_float(data.get('hum'))
-        pres_val = safe_float(data.get('pres'))
-        rssi_val = safe_float(data.get('rssi'))
-        temp_local_val = safe_float(data.get('temp_local')) # <--- NUEVO
-
-        if temp_val is None:
-            return jsonify({"status": "warning", "message": "Falta temperatura"}), 200
+        # Mapeo de variables enviadas por el Receptor LoRa
+        device_id = data.get('id', 'Estacion_Remota')
+        t_aht = safe_float(data.get('t_aht'))
+        h_aht = safe_float(data.get('h_aht'))
+        t1    = safe_float(data.get('t1'))
+        t2    = safe_float(data.get('t2'))
+        t3    = safe_float(data.get('t3'))
+        t4    = safe_float(data.get('t4'))
+        rssi  = safe_float(data.get('rssi'))
 
         # Guardar en PostgreSQL
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # SQL Actualizado
         cur.execute(
-            'INSERT INTO readings (timestamp, device_id, temp, hum, pres, rssi, temp_local) VALUES (%s, %s, %s, %s, %s, %s, %s)',
-            (datetime.now(), device_id, temp_val, hum_val, pres_val, rssi_val, temp_local_val)
+            '''INSERT INTO readings 
+               (timestamp, device_id, t_aht, h_aht, t1, t2, t3, t4, rssi) 
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)''',
+            (datetime.now(), device_id, t_aht, h_aht, t1, t2, t3, t4, rssi)
         )
         
         conn.commit()
         cur.close()
         conn.close()
         
-        print(f"DEBUG: Datos guardados (incluyendo temp_local).")
         return jsonify({"status": "success", "message": "Data logged successfully"}), 200
         
     except Exception as e:
         print(f"CRÍTICO: Error PostgreSQL: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
-
 
 # --- OBTENER HISTORIAL (GET) ---
 @app.route('/api/history')
@@ -128,6 +123,7 @@ def get_history():
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
+        # Consultamos las nuevas columnas
         cur.execute('SELECT * FROM readings ORDER BY timestamp DESC LIMIT 200')
         rows = cur.fetchall()
         
@@ -147,18 +143,41 @@ def get_history():
         print(f"Error fetching history: {e}")
         return jsonify([]), 500
 
+# --- EXPORTAR CSV ---
+@app.route('/api/export')
+def export_data():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('SELECT timestamp, t_aht, h_aht, t1, t2, t3, t4, rssi FROM readings ORDER BY timestamp DESC')
+        rows = cur.fetchall()
+        
+        csv_data = "Fecha,Temp_Ambiente,Hum_Ambiente,Sonda1,Sonda2,Sonda3,Sonda4,RSSI\n"
+        for row in rows:
+            csv_data += f"{row[0]},{row[1]},{row[2]},{row[3]},{row[4]},{row[5]},{row[6]},{row[7]}\n"
+        
+        cur.close()
+        conn.close()
+        
+        return csv_data, 200, {
+            'Content-Type': 'text/csv',
+            'Content-Disposition': 'attachment; filename=lecturas_lora.csv'
+        }
+    except Exception as e:
+        return str(e), 500
+
 # --- LIMPIEZA DE DATOS ---
 @app.route('/api/cleanup', methods=['POST'])
 def cleanup_data():
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute('DELETE FROM readings')
-        deleted_count = cur.rowcount
+        cur.execute('DROP TABLE IF EXISTS readings') # Forzamos borrado para re-estructurar
         conn.commit()
+        init_db() # Re-creamos la tabla limpia
         cur.close()
         conn.close()
-        return jsonify({"status": "success", "message": f"Eliminados {deleted_count} registros"}), 200
+        return jsonify({"status": "success", "message": "Tabla reseteada correctamente"}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
