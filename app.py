@@ -6,7 +6,7 @@ app = Flask(__name__)
 
 # --- CONFIGURACIÓN FIREBASE ---
 # PEGA AQUÍ TU URL Y AÑADE 'readings.json' AL FINAL
-FIREBASE_URL = "https://console.firebase.google.com/u/0/project/tfg2026-511e7/database/tfg2026-511e7-default-rtdb/data/~2F?hl=es-419&fb_gclid=CjwKCAiA2PrMBhA4EiwAwpHyCx5lWsA6mWx1wP_90ulczy5RD1p5Ol2L77Q3qLknxdQiFQNBX5ne-RoCSbcQAvD_BwE&fb_utm_campaign=Cloud-SS-DR-Firebase-FY26-global-gsem-1713590&fb_utm_content=text-ad&fb_utm_medium=cpc&fb_utm_source=google&fb_utm_term=KW_database%20firebase/readings.json"
+FIREBASE_URL = "https://tfg2026-511e7-default-rtdb.europe-west1.firebasedatabase.app/readings.json"
 
 def safe_float(value):
     try: return float(value)
@@ -62,3 +62,4 @@ def index():
 if __name__ == '__main__':
     # Render usa el puerto 10000 por defecto
     app.run(host='0.0.0.0', port=10000)
+
