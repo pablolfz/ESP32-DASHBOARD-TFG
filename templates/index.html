@@ -1,40 +1,24 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <!-- Configuración básica del documento y metadatos esenciales -->
     <meta charset="UTF-8">
-    <!-- Diseño responsivo. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard LoRa | Estación Meteorológica</title>
+    <title>Dashboard LoRa | Estación Multisensor</title>
     
-    <!-- 1. Carga de Tipografía -->
-    <!-- Se carga la fuente 'Open Sans' desde Google Fonts para una tipografía moderna y legible. -->
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     
-    <!-- 2. Librerías de Gráficos (Chart.js) -->
-    <!-- Chart.js es la librería principal para generar los gráficos dinámicos de líneas. -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <!-- Adaptador necesario para que Chart.js pueda interpretar correctamente las marcas de tiempo (timestamp) 
-         en el eje X, utilizando la librería 'date-fns'. -->
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-    <!-- Plugin esencial para permitir al usuario interactuar: hacer zoom y arrastrar (pan) en los gráficos históricos. -->
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
-    <!-- Librería de iconos Font Awesome, utilizada para elementos visuales como la intensidad de la señal. -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
-    <!-- 3. Archivo de Estilos Personalizado -->
-    <!-- Enlace al archivo CSS estático. La función de Jinja2 (Flask) 'url_for' genera la ruta
-         absoluta correcta hacia el archivo 'style.css' dentro de la carpeta 'static'. -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    
 </head>
 <body>
     
-    <!-- SECCIÓN DE CABECERA Y NAVEGACIÓN PRINCIPAL -->
     <header class="header">
         <div class="logo">
             <div class="logo-images">
-                <!-- Inserción de los logos. Flask resuelve las rutas a los archivos de imagen. -->
                 <img src="{{ url_for('static', filename='images/logo_ugr1.png') }}" alt="Logo UGR" class="header-logo" style="height: 60px;">
                 <img src="{{ url_for('static', filename='images/logo_ets.jpg') }}" alt="Logo ETS Caminos" class="header-logo" style="height: 60px;">
             </div>
@@ -42,144 +26,99 @@
         </div>
     
         <nav class="nav">
-            <!-- Enlaces de navegación con funcionalidades definidas en 'dashboard.js' -->
-            <a href="#">Mediciones a tiempo real</a> 
-            <!-- Llama a la función JS 'downloadData()' para exportar los registros a un CSV. -->
+            <a href="#">Tiempo Real</a> 
             <a href="#" onclick="downloadData()">Descargar CSV</a>
-            <!-- Llama a 'confirmCleanup()' para iniciar el proceso de eliminación de datos antiguos. -->
-            <a href="#" onclick="confirmCleanup()">Limpiar (30 días)</a>
+            <a href="#" onclick="confirmCleanup()">Limpiar Historial</a>
             <a href="#">Contacto</a>
         </nav>
     </header>
 
-    <!-- CONTENEDOR PRINCIPAL DE LA APLICACIÓN -->
     <div class="container">
         <h1>Mediciones a tiempo real</h1>
         
-        <!-- Contenedor dinámico para mostrar mensajes de estado (éxito, error, advertencia) al usuario. -->
         <div id="message-container" class="message-container hidden"></div>
 
-        <!-- Muestra la marca de tiempo de la última lectura cargada. Actualizada por JavaScript. -->
-        <p class="subtitle">Última actualización: <span id="currentTime">No data available</span></p>
+        <p class="subtitle">Última lectura: <span id="currentTime">Esperando datos...</span></p>
 
-        <!-- GRID DE DATOS ACTUALES: Seis cajas para las métricas en tiempo real. -->
         <div class="current-data-grid">
             
-            <!-- Caja de visualización para Temperatura 1 (°C) -->
-            <div class="data-box" id="box-temp1">
-                <h3>Temperatura 1 (°C)</h3>
-                <div class="data-value" id="current-temp1-value">No data</div>
+            <div class="data-box" id="box-temp-aht">
+                <i class="fa-solid fa-cloud-sun icon-box"></i>
+                <h3>Ambiente (AHT20)</h3>
+                <div class="data-value" id="current-temp1-value">-- °C</div>
             </div>
 
-            <!-- Caja de visualización para Temperatura 2 (°C) -->
-            <div class="data-box" id="box-temp2">
-                <h3>Temperatura 2 (°C)</h3>
-                <div class="data-value" id="current-temp2-value">No data</div>
+            <div class="data-box" id="box-humidity">
+                <i class="fa-solid fa-droplet icon-box" style="color: #3498db;"></i>
+                <h3>Humedad Ambiente</h3>
+                <div class="data-value" id="current-humidity-value">-- %</div>
             </div>
             
-            <!-- Caja de visualización para Humedad (porcentaje 'pct') -->
-            <div class="data-box" id="box-humidity">
-                <h3>Humedad (%)</h3>
-                <div class="data-value" id="current-humidity-value">N/A</div>
+            <div class="data-box">
+                <i class="fa-solid fa-temperature-list icon-box"></i>
+                <h3>Sondas 1 y 2</h3>
+                <div class="data-value-small">S1: <span id="val-t1">--</span> °C</div>
+                <div class="data-value-small">S2: <span id="val-t2">--</span> °C</div>
             </div>
 
-            <!-- Caja de visualización para Intensidad de la Señal (RSSI) -->
+            <div class="data-box">
+                <i class="fa-solid fa-temperature-list icon-box"></i>
+                <h3>Sondas 3 y 4</h3>
+                <div class="data-value-small">S3: <span id="val-t3">--</span> °C</div>
+                <div class="data-value-small">S4: <span id="val-t4">--</span> °C</div>
+            </div>
+
             <div class="data-box" id="box-signal">
-                <h3>Intensidad de la señal</h3>
-                
+                <h3>Intensidad Señal</h3>
                 <div class="data-icon-container">
-                    <!-- Icono de Font Awesome que se actualizará según la calidad de la señal RSSI. -->
                     <i id="signal-icon" class="fa-solid fa-signal"></i> 
                 </div>
-
-                <div class="data-value" id="current-signal-value">No data</div> 
+                <div class="data-value" id="current-signal-value">-- dBm</div> 
             </div>
-            
-            <!-- Caja de visualización para el Nivel de Batería (porcentaje estimado) -->
-            <div class="data-box" id="box-battery-pct">
-                <h3>Nivel de Batería</h3>
-                <div class="data-value" id="current-battery-pct-value">No data</div>
-            </div>
-            
-            <!-- Caja de visualización para el Voltaje de Batería (valor crudo 'batt') -->
-            <div class="data-box" id="box-battery-volt">
-                <h3>Presión Atmosférica</h3>
-                <div class="data-value" id="current-battery-volt-value">No data</div>
-            </div>
-
         </div>
         
-        
-        <h1>Historico</h1>
+        <br>
+        <h1>Histórico de Mediciones</h1>
 
-        <!-- GRID DE GRÁFICOS HISTÓRICOS -->
         <div class="charts-grid">
             
-            <!-- CONTENEDOR DE GRÁFICO DE TEMPERATURA -->
             <div class="chart-container" style="grid-column: span 2;">
-                <h2>Temperatura Histórica (°C)</h2>
+                <h2>Temperaturas Comparadas (°C)</h2>
                 
-                <!-- Panel de Control 1: Herramientas de navegación del gráfico de temperatura -->
                 <div class="chart-controls">
-                    <!-- Botones que llaman a funciones JS para manejar el zoom y el desplazamiento de tiempo. -->
-                    <button onclick="resetZoom('tempChart')">Restablecer Zoom</button>
-                    <!-- ⭐ BOTONES AÑADIDOS ⭐ -->
+                    <button onclick="resetZoom('tempChart')">Reset</button>
                     <button onclick="buttonZoom('tempChart', -1)">Zoom In</button>
                     <button onclick="buttonZoom('tempChart', 1)">Zoom Out</button>
-                    <!-- ⭐ FIN DE BOTONES AÑADIDOS ⭐ -->
-                    <button onclick="moveTime('tempChart', 1)">Adelantar 1h</button>
-                    <button onclick="moveTime('tempChart', -1)">Retrasar 1h</button>
-                    <!-- Campo de entrada para que el usuario pueda saltar a una fecha y hora específica. -->
-                    <label>Saltar a:</label>
+                    <button onclick="moveTime('tempChart', 1)">+1h</button>
+                    <button onclick="moveTime('tempChart', -1)">-1h</button>
                     <input type="datetime-local" id="tempChartDatetime">
-                    <button onclick="jumpToTime('tempChart', 'tempChartDatetime')">Buscar</button>
+                    <button onclick="jumpToTime('tempChart', 'tempChartDatetime')">Ir</button>
                 </div>
 
-                <!-- Elemento Canvas: El lienzo donde se dibuja el gráfico de temperatura. -->
-                <!-- ⭐ ESTE ES EL CAMBIO: El canvas está dentro de un wrapper. -->
                 <div class="canvas-wrapper">
                     <canvas id="tempChart"></canvas> 
                 </div>
             </div>
 
-            <!-- CONTENEDOR DE GRÁFICO DE BATERÍA -->
             <div class="chart-container" style="grid-column: span 2;">
-                <h2>Voltaje de Batería (V)</h2>
+                <h2>Humedad Relativa Histórica (%)</h2>
                 
-                <!-- Panel de Control 2: Herramientas de navegación del gráfico de batería -->
                 <div class="chart-controls">
-                    <!-- Controles de zoom y desplazamiento para el gráfico de voltaje. -->
-                    <button onclick="resetZoom('batteryChart')">Restablecer Zoom</button>
-                    <!-- ⭐ BOTONES AÑADIDOS ⭐ -->
+                    <button onclick="resetZoom('batteryChart')">Reset</button>
                     <button onclick="buttonZoom('batteryChart', -1)">Zoom In</button>
                     <button onclick="buttonZoom('batteryChart', 1)">Zoom Out</button>
-                    <!-- ⭐ FIN DE BOTONES AÑADIDOS ⭐ -->
-                    <button onclick="moveTime('batteryChart', 1)">Adelantar 1h</button>
-                    <button onclick="moveTime('batteryChart', -1)">Retrasar 1h</button>
-                    <label>Saltar a:</label>
                     <input type="datetime-local" id="batteryChartDatetime">
-                    <button onclick="jumpToTime('batteryChart', 'batteryChartDatetime')">Buscar</button>
+                    <button onclick="jumpToTime('batteryChart', 'batteryChartDatetime')">Ir</button>
                 </div>
 
-                <!-- Elemento Canvas: El lienzo donde se dibuja el gráfico de batería. -->
-                <!-- ⭐ ESTE ES EL CAMBIO: El canvas está dentro de un wrapper. -->
                 <div class="canvas-wrapper">
                     <canvas id="batteryChart"></canvas> 
                 </div>
             </div>
             
         </div>
-        
     </div>
 
-    <!-- 4. Lógica del Frontend (JavaScript) -->
-    <!-- Carga el archivo JavaScript principal. Este script es el encargado de:
-         1. Realizar peticiones GET a la API de Flask (/api/history).
-         2. Procesar los datos de MongoDB.
-         3. Inicializar los gráficos con Chart.js.
-         4. Actualizar los cuadros de datos en tiempo real.
-         5. Implementar las funciones de control (zoom, descarga, limpieza). -->
     <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script> 
 </body>
 </html>
-
