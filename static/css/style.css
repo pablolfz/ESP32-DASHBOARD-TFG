@@ -2,46 +2,238 @@
     --color-bg: #f4f7f6;
     --color-primary: #1a252f;
     --color-header: #ffffff;
+    --color-accent: #3498db;
+    --color-success: #27ae60;
+    
+    /* Colores pastel para identificar secciones */
+    --bg-env: #fffde7;   /* Amarillo claro - Ambiente */
+    --bg-dev1: #f3e5f5;  /* Violeta claro - Estación 1 */
+    --bg-dev2: #fff3e0;  /* Naranja claro - Estación 2 */
+    --bg-dev3: #e0f7fa;  /* Cian claro - Estación 3 */
+    --bg-sig: #e8f5e9;   /* Verde claro - Señal */
 }
 
-body { font-family: 'Segoe UI', sans-serif; margin: 0; background-color: var(--color-bg); }
+body { 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    margin: 0; 
+    background-color: var(--color-bg); 
+    color: var(--color-primary); 
+    overflow-x: hidden;
+}
 
-.header { background: var(--color-header); height: 110px; display: flex; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: sticky; top:0; z-index:1000; }
-.header-content { width: 95%; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
-.logo { display: flex; align-items: center; gap: 15px; }
-.header-logo { height: 70px; width: auto; }
-.logo-text { display: flex; flex-direction: column; }
-.header-title { font-weight: 800; font-size: 1.5rem; }
+/* --- ENCABEZADO (Header) --- */
+.header {
+    background-color: var(--color-header);
+    width: 100%;
+    height: 110px;
+    display: flex;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
 
-.container { max-width: 95%; margin: 2rem auto; }
+.header-content {
+    width: 95%;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
 
-/* GRID REESTRUCTURADO */
+.logo { 
+    display: flex; 
+    align-items: center; 
+    gap: 15px; 
+}
+
+.header-logo { 
+    height: 75px; 
+    width: auto; 
+}
+
+.logo-text { 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: center;
+}
+
+.header-title { 
+    font-weight: 800; 
+    font-size: 1.6rem; 
+    margin: 0; 
+    line-height: 1.1;
+}
+
+.header-subtitle { 
+    font-size: 0.95rem; 
+    color: #666; 
+    margin: 0; 
+    margin-top: 2px;
+}
+
+.nav { 
+    display: flex; 
+    gap: 20px; 
+    align-items: center; 
+}
+
+.nav a { 
+    text-decoration: none; 
+    color: var(--color-primary); 
+    font-weight: 700; 
+    font-size: 1rem; 
+}
+
+.btn-csv { 
+    background-color: var(--color-success) !important; 
+    color: white !important; 
+    padding: 10px 18px !important; 
+    border-radius: 8px; 
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+}
+
+/* --- CONTENEDOR PRINCIPAL --- */
+.container { 
+    max-width: 95%; 
+    margin: 1.5rem auto; 
+}
+
+h1 {
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+}
+
+.last-update {
+    font-size: 0.9rem;
+    color: #777;
+    margin-bottom: 1.5rem;
+}
+
+/* --- GRID DE RECUADROS (Una sola línea de 5) --- */
 .current-data-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1.5rem; margin-bottom: 3rem;
+    grid-template-columns: repeat(5, 1fr); /* 5 columnas iguales */
+    gap: 1rem; 
+    margin-bottom: 2.5rem;
 }
 
-.data-box { padding: 1.5rem; border-radius: 15px; border-top: 6px solid #333; background: white; }
+.data-box {
+    padding: 1.2rem; 
+    border-radius: 15px; 
+    border: 1px solid rgba(0,0,0,0.05);
+    background: white;
+    min-width: 0; /* Evita desbordamiento */
+    transition: transform 0.2s;
+}
 
-/* Colores por sección */
-#box-env { background-color: #fffde7; border-color: #fbc02d; }
-#box-dev1 { background-color: #f3e5f5; border-color: #9b59b6; }
-#box-dev2 { background-color: #fff3e0; border-color: #e67e22; }
-#box-dev3 { background-color: #e0f7fa; border-color: #00acc1; }
-#box-signal { background-color: #e8f5e9; border-color: #2ecc71; }
+.data-box h3 { 
+    margin-top: 0; 
+    font-size: 0.85rem; 
+    color: #444; 
+    display: flex; 
+    justify-content: space-between;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
 
-/* Tabla de Ambiente */
-.env-table { margin-top: 10px; }
-.env-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 1.2rem; }
-.header-row { font-weight: bold; color: #666; font-size: 0.9rem; text-transform: uppercase; }
-.env-row b { width: 30%; text-align: right; }
+/* Colores específicos por ID */
+#box-env    { background-color: var(--bg-env); border-top: 6px solid #f1c40f; }
+#box-dev1   { background-color: var(--bg-dev1); border-top: 6px solid #9b59b6; }
+#box-dev2   { background-color: var(--bg-dev2); border-top: 6px solid #e67e22; }
+#box-dev3   { background-color: var(--bg-dev3); border-top: 6px solid #00acc1; }
+#box-signal { background-color: var(--bg-sig); border-top: 6px solid #2ecc71; }
 
-.data-value-small { display: flex; justify-content: space-between; font-weight: 700; padding: 5px 0; border-bottom: 1px solid #f0f0f0; }
+/* Tabla de Ambiente (Recuadro 1) */
+.env-table { width: 100%; margin-top: 5px; }
+.env-row { 
+    display: flex; 
+    justify-content: space-between; 
+    padding: 5px 0; 
+    font-size: 1rem; 
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+.header-row { font-size: 0.75rem; font-weight: bold; color: #888; border-bottom: 2px solid rgba(0,0,0,0.05); }
+.env-row b { text-align: right; width: 35%; color: var(--color-primary); }
 
-.charts-grid { display: flex; flex-direction: column; gap: 3rem; }
-.chart-container { background: white; padding: 2rem; border-radius: 20px; border: 1px solid #ddd; }
-.canvas-wrapper { height: 600px; width: 100%; position: relative; }
+/* Listado de Sondas (Recuadros 2, 3, 4 y 5) */
+.data-value-small { 
+    display: flex; 
+    justify-content: space-between; 
+    font-weight: 700; 
+    border-bottom: 1px solid rgba(0,0,0,0.03); 
+    padding: 5px 0; 
+    font-size: 1rem;
+}
+.data-value-small span { color: #666; font-weight: 400; }
 
-.chart-toolbar { display: flex; gap: 10px; margin-bottom: 10px; background: #f9f9f9; padding: 8px; border-radius: 8px; }
-.btn-csv { background: #27ae60; color: white; padding: 10px 15px; border-radius: 6px; text-decoration: none; font-weight: bold; }
+/* --- SECCIÓN DE GRÁFICAS --- */
+.charts-grid { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 3rem; 
+}
+
+.chart-container { 
+    background: white; 
+    padding: 2rem; 
+    border-radius: 20px; 
+    border: 1px solid #ddd; 
+    box-shadow: 0 5px 15px rgba(0,0,0,0.02);
+}
+
+.chart-container h2 {
+    font-size: 1.5rem;
+    margin-top: 0;
+    border-left: 5px solid var(--color-accent);
+    padding-left: 15px;
+    margin-bottom: 1.5rem;
+}
+
+.canvas-wrapper { 
+    height: 600px; 
+    width: 100%; 
+    position: relative; 
+}
+
+/* Barra de herramientas de las gráficas */
+.chart-toolbar { 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    margin-bottom: 15px; 
+    padding: 10px; 
+    background: #f9f9f9; 
+    border-radius: 8px; 
+}
+
+.chart-toolbar button { 
+    padding: 8px 15px; 
+    cursor: pointer; 
+    border: 1px solid #ccc; 
+    background: white; 
+    border-radius: 5px; 
+    font-size: 0.9rem;
+    transition: 0.2s;
+}
+
+.chart-toolbar button:hover { background: #eee; }
+
+.chart-toolbar input[type="date"] {
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-left: auto;
+}
+
+/* Responsividad básica para pantallas pequeñas */
+@media (max-width: 1200px) {
+    .current-data-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+}
