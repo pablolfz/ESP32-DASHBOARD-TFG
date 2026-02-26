@@ -4,11 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Estación LoRa UGR - Dashboard TFG</title>
+    
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+
+    <style>
+        /* Ajustes de última hora para asegurar visibilidad */
+        html { scroll-behavior: smooth; }
+        .canvas-wrapper {
+            position: relative;
+            height: 400px; /* Altura fija para que la gráfica no colapse */
+            width: 100%;
+            background-color: #ffffff;
+            border-radius: 8px;
+        }
+        .divider {
+            border: 0;
+            height: 1px;
+            background: #e1e4e8;
+            margin: 3rem 0;
+        }
+    </style>
 </head>
 <body>
     <header class="header">
@@ -32,7 +51,7 @@
     <div class="container">
         <section class="top-section">
             <h1>Mediciones a tiempo real</h1>
-            <p class="last-update" id="currentTime">Esperando sincronización...</p>
+            <p class="last-update" id="currentTime">Esperando sincronización de Firebase...</p>
         </section>
 
         <div class="current-data-grid">
@@ -46,20 +65,20 @@
                 <div class="data-value" id="current-humidity-value">-- %</div>
             </div>
 
-            <div class="data-box" id="box-dev1-sondas">
+            <div class="data-box" style="border-top: 5px solid #9b59b6; background-color: #f3e5f5;">
                 <h3>Sondas Dispositivo 1 <i class="fa-solid fa-temperature-half icon-box"></i></h3>
-                <div class="data-value-small"><span>Sonda 1:</span> <b id="val-t1">--</b> °C</div>
-                <div class="data-value-small"><span>Sonda 2:</span> <b id="val-t2">--</b> °C</div>
-                <div class="data-value-small"><span>Sonda 3:</span> <b id="val-t3">--</b> °C</div>
-                <div class="data-value-small"><span>Sonda 4:</span> <b id="val-t4">--</b> °C</div>
+                <div class="data-value-small"><span>S1:</span> <b id="val-t1">--</b> °C</div>
+                <div class="data-value-small"><span>S2:</span> <b id="val-t2">--</b> °C</div>
+                <div class="data-value-small"><span>S3:</span> <b id="val-t3">--</b> °C</div>
+                <div class="data-value-small"><span>S4:</span> <b id="val-t4">--</b> °C</div>
             </div>
 
-            <div class="data-box" id="box-dev2-sondas" style="border-top: 5px solid #e67e22; background-color: #fdf2e9;">
+            <div class="data-box" style="border-top: 5px solid #e67e22; background-color: #fdf2e9;">
                 <h3>Sondas Dispositivo 2 <i class="fa-solid fa-microchip icon-box"></i></h3>
-                <div class="data-value-small"><span>Sonda 1:</span> <b id="dev2-t1">--</b> °C</div>
-                <div class="data-value-small"><span>Sonda 2:</span> <b id="dev2-t2">--</b> °C</div>
-                <div class="data-value-small"><span>Sonda 3:</span> <b id="dev2-t3">--</b> °C</div>
-                <div class="data-value-small"><span>Sonda 4:</span> <b id="dev2-t4">--</b> °C</div>
+                <div class="data-value-small"><span>S1:</span> <b id="dev2-t1">--</b> °C</div>
+                <div class="data-value-small"><span>S2:</span> <b id="dev2-t2">--</b> °C</div>
+                <div class="data-value-small"><span>S3:</span> <b id="dev2-t3">--</b> °C</div>
+                <div class="data-value-small"><span>S4:</span> <b id="dev2-t4">--</b> °C</div>
             </div>
 
             <div class="data-box" id="box-signal">
@@ -86,9 +105,9 @@
             </div>
         </div>
 
-        <footer style="text-align: center; margin: 50px 0; color: #7f8c8d; font-size: 0.9rem;">
-            <p>Proyecto TFG - Monitorización de Sensores vía LoRa & Firebase</p>
-            <a href="#" style="color: #3498db; text-decoration: none;">Volver arriba</a>
+        <footer style="text-align: center; margin: 60px 0; color: #7f8c8d; font-size: 0.85rem;">
+            <p>Proyecto TFG - Monitorización IoT vía LoRa & Firebase</p>
+            <p>Universidad de Granada - ETSICCP</p>
         </footer>
     </div>
 
