@@ -1,6 +1,6 @@
 /*
  * Dashboard Multisensor LoRa - Estilo Profesional Final
- * Optimizado para visualización vertical y logos institucionales
+ * Optimizado para visualización de dos dispositivos y gráficas verticales
  */
 
 :root {
@@ -13,15 +13,15 @@
     --border-card: #e1e4e8;
     --bg-card: #ffffff;
     
-    /* Colores temáticos para sensores */
-    --color-temp: #fff9db;
-    --color-hum: #e3f2fd;
-    --color-sondas1: #f3e5f5;
-    --color-sondas2: #fdf2e9;
-    --color-sig: #e8f5e9;
+    /* Colores temáticos para las tarjetas */
+    --color-temp: #fff9db;   /* Amarillo suave (Ambiente) */
+    --color-hum: #e3f2fd;    /* Azul suave (Humedad) */
+    --color-sondas1: #f3e5f5; /* Púrpura (Dev 1) */
+    --color-sondas2: #fdf2e9; /* Naranja (Dev 2) */
+    --color-sig: #e8f5e9;    /* Verde (Señal) */
 }
 
-/* --- REGLAS BASE --- */
+/* --- CONFIGURACIÓN BASE --- */
 html {
     scroll-behavior: smooth;
 }
@@ -36,7 +36,7 @@ body {
     overflow-x: hidden;
 }
 
-/* --- HEADER Y NAVEGACIÓN --- */
+/* --- HEADER (Arreglado: Logos y Botones) --- */
 .header {
     background-color: var(--color-header);
     padding: 0 5%;
@@ -47,7 +47,7 @@ body {
     position: sticky;
     top: 0;
     z-index: 1000;
-    height: 80px;
+    height: 85px;
 }
 
 .logo {
@@ -57,9 +57,9 @@ body {
     height: 100%;
 }
 
-/* Control del tamaño de los logos de la UGR/ETSICCP */
+/* Evita que el logo de la UGR se vea gigante */
 .header-logo {
-    height: 55px;
+    height: 60px;
     width: auto;
     object-fit: contain;
 }
@@ -70,7 +70,7 @@ body {
 }
 
 .header-title {
-    font-size: 1.2rem;
+    font-size: 1.25rem;
     font-weight: 800;
     margin: 0;
     color: var(--color-primary);
@@ -82,10 +82,11 @@ body {
     margin: 0;
 }
 
+/* Navegación y Botones */
 .nav {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 }
 
 .nav a {
@@ -111,13 +112,15 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .btn-csv:hover {
     background-color: #219150 !important;
+    transform: translateY(-1px);
 }
 
-/* --- CONTENIDO PRINCIPAL --- */
+/* --- CONTENIDO --- */
 .container {
     max-width: 1200px;
     margin: 2rem auto;
@@ -132,14 +135,14 @@ h1 {
 
 .last-update {
     color: #7f8c8d;
-    margin-bottom: 2rem;
     font-size: 0.9rem;
+    margin-bottom: 2rem;
 }
 
-/* --- GRID DE TARJETAS --- */
+/* --- GRID DE TARJETAS (CARDS) --- */
 .current-data-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 1.5rem;
     margin-bottom: 3rem;
 }
@@ -165,11 +168,10 @@ h1 {
     color: #7f8c8d;
     display: flex;
     justify-content: space-between;
-    align-items: center;
 }
 
 .data-value {
-    font-size: 2.5rem;
+    font-size: 2.6rem;
     font-weight: 800;
     margin: 10px 0;
 }
@@ -177,23 +179,27 @@ h1 {
 .data-value-small {
     font-size: 1.1rem;
     font-weight: 700;
-    margin: 5px 0;
+    margin: 6px 0;
     display: flex;
     justify-content: space-between;
     border-bottom: 1px solid rgba(0,0,0,0.05);
-    padding-bottom: 3px;
 }
 
-/* Colores específicos para cajas */
+/* Colores específicos por ID */
 #box-temp-aht { border-top: 5px solid #f1c40f; background-color: var(--color-temp); }
 #box-humidity { border-top: 5px solid #3498db; background-color: var(--color-hum); }
 #box-signal   { border-top: 5px solid #2ecc71; background-color: var(--color-sig); }
 
-/* --- SECCIÓN DE GRÁFICAS (UNA DEBAJO DE OTRA) --- */
+.icon-box {
+    font-size: 1.4rem;
+    opacity: 0.5;
+}
+
+/* --- GRÁFICAS (UNA DEBAJO DE OTRA) --- */
 .charts-grid {
     display: flex;
     flex-direction: column; /* Apilado vertical */
-    gap: 3rem;              /* Espacio entre bloques de gráficas */
+    gap: 3.5rem;
     margin-top: 2rem;
 }
 
@@ -203,22 +209,23 @@ h1 {
     border-radius: 15px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.08);
     border: 1px solid var(--border-card);
-    width: 100%;
-    box-sizing: border-box;
 }
 
 .chart-container h2 {
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     margin-bottom: 1.5rem;
-    color: var(--color-primary);
     border-left: 5px solid var(--color-accent);
     padding-left: 15px;
 }
 
+/* Wrapper para que Chart.js tenga espacio */
 .canvas-wrapper {
     position: relative;
-    height: 450px; /* Altura aumentada para mejor lectura */
+    height: 450px; /* Altura ideal para lectura */
     width: 100%;
+    background-color: #fafafa;
+    border-radius: 10px;
+    padding: 10px;
 }
 
 .divider {
@@ -228,7 +235,7 @@ h1 {
     margin: 4rem 0;
 }
 
-/* --- RESPONSIVIDAD --- */
+/* --- RESPONSIVIDAD MÓVIL --- */
 @media (max-width: 768px) {
     .header {
         height: auto;
@@ -236,13 +243,11 @@ h1 {
         flex-direction: column;
         gap: 15px;
     }
-    
     .nav {
         flex-wrap: wrap;
         justify-content: center;
     }
-
     .canvas-wrapper {
-        height: 300px;
+        height: 320px;
     }
 }
