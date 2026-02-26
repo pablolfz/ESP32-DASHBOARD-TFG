@@ -79,7 +79,7 @@
         <div class="charts-grid">
             
             <div class="chart-container" style="grid-column: span 2;">
-                <h2>Temperaturas Comparadas (°C)</h2>
+               <h2>Temperaturas Históricas - Dispositivo 1</h2>
                 
                 <div class="chart-controls">
                     <button onclick="resetZoom('tempChart')">Reset</button>
@@ -97,7 +97,7 @@
             </div>
 
             <div class="chart-container" style="grid-column: span 2;">
-                <h2>Humedad Relativa Histórica (%)</h2>
+                <h2>Temperaturas Históricas - Dispositivo 2</h2>
                 
                 <div class="chart-controls">
                     <button onclick="resetZoom('batteryChart')">Reset</button>
@@ -118,4 +118,5 @@
     <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script> 
 </body>
 </html>
+
 
