@@ -7,40 +7,69 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initCharts() {
-    const getOptions = (id) => ({
+    const getOptions = () => ({
         responsive: true, 
         maintainAspectRatio: false,
         scales: {
             x: { 
                 type: 'time', 
                 time: { unit: 'minute', displayFormats: { minute: 'HH:mm', hour: 'HH:mm' } },
-                ticks: { autoSkip: true, maxRotation: 0, font: { size: 11 } },
-                title: { display: true, text: 'Hora (24h)', font: { weight: 'bold', size: 12 } }
+                ticks: { 
+                    autoSkip: true, 
+                    minRotation: 45, // Etiquetas tumbadas
+                    maxRotation: 45, // Etiquetas tumbadas
+                    font: { size: 13, weight: '500' } // Fuente más grande
+                },
+                title: { 
+                    display: true, 
+                    text: 'Hora de lectura (24h)', 
+                    font: { weight: 'bold', size: 14 } 
+                }
             },
             y: { 
                 type: 'linear', 
                 position: 'left', 
-                title: { display: true, text: 'Temperatura (°C)', font: { weight: 'bold', size: 13 }, color: '#c0392b' },
-                ticks: { font: { size: 11 } }
+                title: { 
+                    display: true, 
+                    text: 'Temperatura (°C)', 
+                    font: { weight: 'bold', size: 15 }, 
+                    color: '#c0392b' 
+                },
+                ticks: { font: { size: 13, weight: 'bold' } }
             },
             y1: { 
                 type: 'linear', 
                 position: 'right', 
                 min: 0, max: 100, 
                 grid: { drawOnChartArea: false }, 
-                title: { display: true, text: 'Humedad (%)', font: { weight: 'bold', size: 13 }, color: '#2980b9' },
-                ticks: { font: { size: 11 } }
+                title: { 
+                    display: true, 
+                    text: 'Humedad (%)', 
+                    font: { weight: 'bold', size: 15 }, 
+                    color: '#2980b9' 
+                },
+                ticks: { font: { size: 13, weight: 'bold' } }
             }
         },
         plugins: { 
-            legend: { labels: { boxWidth: 12, font: { size: 11, weight: 'bold' } } },
-            zoom: { pan: { enabled: true, mode: 'x' }, zoom: { wheel: { enabled: false }, mode: 'x' } } 
+            legend: { 
+                position: 'bottom',
+                labels: { 
+                    boxWidth: 20, // Cuadrado de color más grande
+                    padding: 20,
+                    font: { size: 16, weight: 'bold' } // LEYENDA MUCHO MÁS GRANDE
+                } 
+            },
+            zoom: { 
+                pan: { enabled: true, mode: 'x' }, 
+                zoom: { wheel: { enabled: false }, mode: 'x' } 
+            } 
         }
     });
 
-    chart1 = new Chart(document.getElementById('chart1'), { type: 'line', data: { datasets: [] }, options: getOptions(1) });
-    chart2 = new Chart(document.getElementById('chart2'), { type: 'line', data: { datasets: [] }, options: getOptions(2) });
-    chart3 = new Chart(document.getElementById('chart3'), { type: 'line', data: { datasets: [] }, options: getOptions(3) });
+    chart1 = new Chart(document.getElementById('chart1'), { type: 'line', data: { datasets: [] }, options: getOptions() });
+    chart2 = new Chart(document.getElementById('chart2'), { type: 'line', data: { datasets: [] }, options: getOptions() });
+    chart3 = new Chart(document.getElementById('chart3'), { type: 'line', data: { datasets: [] }, options: getOptions() });
 }
 
 async function updateData() {
@@ -62,12 +91,12 @@ async function updateData() {
                 
                 charts[index].data.labels = d.map(i => new Date(i.timestamp));
                 charts[index].data.datasets = [
-                    { label: 'Ambiente', data: clean('t_aht'), borderColor: '#f1c40f', backgroundColor: '#f1c40f', yAxisID: 'y', tension: 0.3 },
-                    { label: 'Humedad', data: clean('h_aht'), borderColor: '#3498db', backgroundColor: '#3498db', yAxisID: 'y1', borderDash: [5, 5], tension: 0.3 },
-                    { label: 'S1', data: clean('t1'), borderColor: '#e67e22', yAxisID: 'y' },
-                    { label: 'S2', data: clean('t2'), borderColor: '#2ecc71', yAxisID: 'y' },
-                    { label: 'S3', data: clean('t3'), borderColor: '#9b59b6', yAxisID: 'y' },
-                    { label: 'S4', data: clean('t4'), borderColor: '#34495e', yAxisID: 'y' }
+                    { label: 'Ambiente', data: clean('t_aht'), borderColor: '#f1c40f', backgroundColor: '#f1c40f', yAxisID: 'y', tension: 0.3, borderWidth: 4 },
+                    { label: 'Humedad', data: clean('h_aht'), borderColor: '#3498db', backgroundColor: '#3498db', yAxisID: 'y1', borderDash: [5, 5], tension: 0.3, borderWidth: 3 },
+                    { label: 'S1', data: clean('t1'), borderColor: '#e67e22', yAxisID: 'y', borderWidth: 3 },
+                    { label: 'S2', data: clean('t2'), borderColor: '#2ecc71', yAxisID: 'y', borderWidth: 3 },
+                    { label: 'S3', data: clean('t3'), borderColor: '#9b59b6', yAxisID: 'y', borderWidth: 3 },
+                    { label: 'S4', data: clean('t4'), borderColor: '#34495e', yAxisID: 'y', borderWidth: 3 }
                 ];
                 charts[index].update('none');
                 updateUI(last, index + 1);
@@ -92,7 +121,6 @@ function updateUI(l, id) {
     if(id === 1) document.getElementById('currentTime').textContent = "Sincronizado: " + new Date(l.timestamp).toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit', hour12:false});
 }
 
-// CONTROLES MANUALES
 function moveChart(chart, pct) {
     const scale = chart.scales.x;
     const range = scale.max - scale.min;
