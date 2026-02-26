@@ -10,25 +10,25 @@
 
 body { font-family: 'Segoe UI', sans-serif; margin: 0; background-color: var(--color-bg); }
 
-/* HEADER RESPONSIVO */
-.header { background: white; min-height: 110px; display: flex; align-items: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-.header-content { width: 95%; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; padding: 10px 0; }
+/* HEADER COMPACTO */
+.header { background: white; height: 90px; display: flex; align-items: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+.header-content { width: 95%; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
 
-.logo { display: flex; align-items: center; gap: 15px; }
-.logos-container { display: flex; align-items: center; gap: 10px; border-right: 2px solid #eee; padding-right: 15px; }
-.header-logo { height: 60px; width: auto; }
+.header-left { display: flex; align-items: center; gap: 10px; }
+.logos-container { display: flex; align-items: center; gap: 8px; border-right: 1px solid #eee; padding-right: 10px; }
+.header-logo { height: 50px; width: auto; }
 .logo-text { display: flex; flex-direction: column; }
-.header-title { font-weight: 800; font-size: 1.3rem; margin: 0; }
-.header-subtitle { font-size: 0.8rem; color: #666; margin: 0; }
+.header-title { font-weight: 800; font-size: 1.1rem; margin: 0; line-height: 1; }
+.header-subtitle { font-size: 0.7rem; color: #666; margin: 0; }
 
-.nav { display: flex; gap: 15px; align-items: center; }
-.nav a { text-decoration: none; color: var(--color-primary); font-weight: 700; font-size: 0.9rem; }
-.btn-csv { background: #27ae60 !important; color: white !important; padding: 8px 12px; border-radius: 6px; display: flex; align-items: center; gap: 5px; }
+.nav { display: flex; gap: 12px; align-items: center; }
+.nav a { text-decoration: none; color: var(--color-primary); font-weight: 700; font-size: 0.85rem; }
+.btn-csv { background: #27ae60 !important; color: white !important; padding: 6px 10px; border-radius: 6px; display: flex; align-items: center; gap: 5px; }
 
-/* GRID PRINCIPAL (Escritorio) */
-.container { max-width: 98%; margin: 1rem auto; padding: 0 10px; }
-.current-data-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.8rem; margin-bottom: 2rem; }
-.data-box { padding: 1rem; border-radius: 12px; border-top: 5px solid #333; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+/* GRID PRINCIPAL */
+.container { max-width: 98%; margin: 0.5rem auto; padding: 0 5px; }
+.current-data-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; margin-bottom: 1.5rem; }
+.data-box { padding: 0.8rem; border-radius: 10px; border-top: 4px solid #333; background: white; }
 
 #box-env { background: var(--bg-env); border-color: #f1c40f; }
 #box-dev1 { background: var(--bg-dev1); border-color: #9b59b6; }
@@ -36,33 +36,32 @@ body { font-family: 'Segoe UI', sans-serif; margin: 0; background-color: var(--c
 #box-dev3 { background: var(--bg-dev3); border-color: #00acc1; }
 #box-signal { background: var(--bg-sig); border-color: #2ecc71; }
 
-.data-value-small { display: flex; justify-content: space-between; font-weight: 800; font-size: 1.1rem; padding: 5px 0; border-bottom: 1px solid rgba(0,0,0,0.03); }
+.env-row { display: flex; justify-content: space-between; font-size: 0.9rem; padding: 2px 0; }
+.data-value-small { display: flex; justify-content: space-between; font-weight: 800; font-size: 1rem; padding: 3px 0; }
 
 /* GRÁFICAS */
-.charts-grid { display: flex; flex-direction: column; gap: 2rem; }
-.chart-container { background: white; padding: 1rem; border-radius: 15px; border: 1px solid #ddd; }
-.canvas-wrapper { height: 400px; width: 100%; position: relative; }
-.chart-toolbar { display: flex; gap: 5px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; }
+.chart-container { background: white; padding: 0.8rem; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 1.5rem; }
+.canvas-wrapper { height: 350px; width: 100%; position: relative; }
+.chart-toolbar { display: flex; gap: 5px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
+.chart-toolbar button { padding: 6px 10px; cursor: pointer; border: 1px solid #ccc; background: white; border-radius: 4px; }
 
-/* --- MEDIA QUERIES PARA MÓVIL --- */
-@media (max-width: 1024px) {
-    .current-data-grid { grid-template-columns: repeat(2, 1fr); } /* 2 columnas en tablets */
-    #box-env { grid-column: span 2; } /* Ambiente ocupa ancho total en tablet */
+/* AJUSTES MÓVIL EXTREMO */
+@media (max-width: 768px) {
+    .header { height: 70px; }
+    .header-logo { height: 35px; }
+    .header-title { font-size: 0.9rem; }
+    .header-subtitle { display: none; } /* Ocultamos subtítulo en móvil para ganar espacio */
+    .nav { gap: 8px; }
+    .hide-mobile { display: none; } /* Ocultamos "Tiempo Real" y texto de CSV */
+    
+    .current-data-grid { grid-template-columns: repeat(2, 1fr); }
+    #box-env { grid-column: span 2; }
+    .canvas-wrapper { height: 280px; }
 }
 
-@media (max-width: 600px) {
-    .header { height: auto; padding: 10px 0; }
-    .logos-container { border-right: none; padding-bottom: 10px; }
-    .logo { flex-direction: column; text-align: center; width: 100%; }
-    .header-logo { height: 45px; }
-    .nav { width: 100%; justify-content: center; padding-top: 10px; border-top: 1px solid #eee; }
-    .btn-text { display: none; } /* Oculta texto "Descargar" en móvil, solo deja el icono */
-
-    .current-data-grid { grid-template-columns: 1fr; } /* 1 columna en móvil */
-    #box-env { grid-column: span 1; }
-    
-    .data-value-small { font-size: 1.3rem; } /* Aumenta tamaño de dato para leerlo bien */
-    .canvas-wrapper { height: 300px; } /* Reduce altura de gráfica en móvil */
-    
-    .main-title { font-size: 1.5rem; text-align: center; }
+@media (max-width: 480px) {
+    .header-left { gap: 5px; }
+    .logos-container { gap: 4px; padding-right: 5px; }
+    .header-logo { height: 30px; }
+    .header-title { font-size: 0.8rem; }
 }
