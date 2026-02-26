@@ -41,41 +41,37 @@
         <p class="subtitle">Última lectura: <span id="currentTime">Esperando datos...</span></p>
 
         <div class="current-data-grid">
-            
-            <div class="data-box" id="box-temp-aht">
-                <i class="fa-solid fa-cloud-sun icon-box"></i>
-                <h3>Ambiente (AHT20)</h3>
-                <div class="data-value" id="current-temp1-value">-- °C</div>
-            </div>
+    <div class="data-box" id="box-temp-aht">
+        <h3>Ambiente (AHT20) <i class="fa-solid fa-cloud-sun icon-box"></i></h3>
+        <div class="data-value" id="current-temp1-value">-- °C</div>
+    </div>
 
-            <div class="data-box" id="box-humidity">
-                <i class="fa-solid fa-droplet icon-box" style="color: #3498db;"></i>
-                <h3>Humedad Ambiente</h3>
-                <div class="data-value" id="current-humidity-value">-- %</div>
-            </div>
-            
-            <div class="data-box">
-                <i class="fa-solid fa-temperature-list icon-box"></i>
-                <h3>Sondas 1 y 2</h3>
-                <div class="data-value-small">S1: <span id="val-t1">--</span> °C</div>
-                <div class="data-value-small">S2: <span id="val-t2">--</span> °C</div>
-            </div>
+    <div class="data-box" id="box-humidity">
+        <h3>Humedad Ambiente <i class="fa-solid fa-droplet icon-box"></i></h3>
+        <div class="data-value" id="current-humidity-value">-- %</div>
+    </div>
 
-            <div class="data-box">
-                <i class="fa-solid fa-temperature-list icon-box"></i>
-                <h3>Sondas 3 y 4</h3>
-                <div class="data-value-small">S3: <span id="val-t3">--</span> °C</div>
-                <div class="data-value-small">S4: <span id="val-t4">--</span> °C</div>
-            </div>
+    <div class="data-box" style="border-top: 5px solid #9b59b6; background-color: #f3e5f5;">
+        <h3>Sondas Dispositivo 1 <i class="fa-solid fa-temperature-list icon-box"></i></h3>
+        <div class="data-value-small"><span>S1:</span> <b id="val-t1">--</b> °C</div>
+        <div class="data-value-small"><span>S2:</span> <b id="val-t2">--</b> °C</div>
+        <div class="data-value-small"><span>S3:</span> <b id="val-t3">--</b> °C</div>
+        <div class="data-value-small"><span>S4:</span> <b id="val-t4">--</b> °C</div>
+    </div>
 
-            <div class="data-box" id="box-signal">
-                <h3>Intensidad Señal</h3>
-                <div class="data-icon-container">
-                    <i id="signal-icon" class="fa-solid fa-signal"></i> 
-                </div>
-                <div class="data-value" id="current-signal-value">-- dBm</div> 
-            </div>
-        </div>
+    <div class="data-box" style="border-top: 5px solid #e67e22; background-color: #fdf2e9;">
+        <h3>Sondas Dispositivo 2 <i class="fa-solid fa-microchip icon-box"></i></h3>
+        <div class="data-value-small"><span>S1:</span> <b id="dev2-t1">--</b> °C</div>
+        <div class="data-value-small"><span>S2:</span> <b id="dev2-t2">--</b> °C</div>
+        <div class="data-value-small"><span>S3:</span> <b id="dev2-t3">--</b> °C</div>
+        <div class="data-value-small"><span>S4:</span> <b id="dev2-t4">--</b> °C</div>
+    </div>
+
+    <div class="data-box" id="box-signal">
+        <h3>Señal <i class="fa-solid fa-signal icon-box"></i></h3>
+        <div class="data-value" id="current-signal-value">-- dBm</div>
+    </div>
+</div>
         
         <br>
         <h1>Histórico de Mediciones</h1>
@@ -122,3 +118,4 @@
     <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script> 
 </body>
 </html>
+
