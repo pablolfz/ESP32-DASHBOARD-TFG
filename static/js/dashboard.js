@@ -21,8 +21,7 @@ function initCharts() {
             x: { 
                 type: 'time', 
                 time: { unit: 'minute', displayFormats: { minute: 'HH:mm' } },
-                title: { display: true, text: 'Hora', font: { size: 18, weight: 'bold' } },
-                ticks: { font: { size: 14 } }
+                title: { display: true, text: 'Hora', font: { size: 18, weight: 'bold' } }
             },
             y: { 
                 title: { display: true, text: 'Temp (°C)', font: { size: 18, weight: 'bold' } },
@@ -35,17 +34,14 @@ function initCharts() {
     chart2 = new Chart(document.getElementById('batteryChart'), { type: 'line', data: { datasets: [] }, options: commonOptions });
 }
 
-// Lógica de movimiento lateral
 function moveChart(chart, pct) {
     const scale = chart.scales.x;
     const range = scale.max - scale.min;
-    const amount = range * pct;
-    scale.options.min = scale.min + amount;
-    scale.options.max = scale.max + amount;
-    chart.update('none');
+    chart.options.scales.x.min = scale.min + (range * pct);
+    chart.options.scales.x.max = scale.max + (range * pct);
+    chart.update();
 }
 
-// Lógica para ir a un día concreto
 function goToDate(chart, dateStr) {
     if (!dateStr) return;
     const start = new Date(dateStr + "T00:00:00").getTime();
@@ -58,8 +54,8 @@ function goToDate(chart, dateStr) {
 async function updateData() {
     try {
         const res = await fetch('/api/history');
-        const raw = await res.json();
-        let data = Array.isArray(raw) ? raw : Object.values(raw);
+        const dataRaw = await res.json();
+        let data = Array.isArray(dataRaw) ? dataRaw : Object.values(dataRaw);
         if (!data.length) return;
 
         data.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
@@ -73,11 +69,13 @@ async function updateData() {
             chart1.data.labels = d1.map(i => new Date(i.timestamp));
             chart1.data.datasets = [
                 { label: 'Ambiente', data: clean(d1, 't_aht'), borderColor: '#f1c40f', borderWidth: 3 },
-                { label: 'S1', data: clean(d1, 't1'), borderColor: '#e67e22', borderWidth: 3 }
+                { label: 'S1', data: clean(d1, 't1'), borderColor: '#e67e22', borderWidth: 3 },
+                { label: 'S2', data: clean(d1, 't2'), borderColor: '#3498db', borderWidth: 3 }
             ];
             chart1.update('none');
             refreshUI(d1[d1.length-1], 'dev1');
         }
+
         if (chart2 && d2.length) {
             chart2.data.labels = d2.map(i => new Date(i.timestamp));
             chart2.data.datasets = [{ label: 'S1', data: clean(d2, 't1'), borderColor: '#2ecc71', borderWidth: 3 }];
@@ -93,9 +91,15 @@ function refreshUI(last, dev) {
         document.getElementById('current-temp1-value').textContent = fmt(last.t_aht) + " °C";
         document.getElementById('current-humidity-value').textContent = fmt(last.h_aht) + " %";
         document.getElementById('val-t1').textContent = fmt(last.t1);
-        document.getElementById('currentTime').textContent = "Sincronizado: " + new Date(last.timestamp).toLocaleTimeString();
+        document.getElementById('val-t2').textContent = fmt(last.t2);
+        document.getElementById('val-t3').textContent = fmt(last.t3);
+        document.getElementById('val-t4').textContent = fmt(last.t4);
         document.getElementById('current-signal-value').textContent = (last.rssi || "--") + " dBm";
+        document.getElementById('currentTime').textContent = "Sincronizado: " + new Date(last.timestamp).toLocaleTimeString();
     } else {
         document.getElementById('dev2-t1').textContent = fmt(last.t1);
+        document.getElementById('dev2-t2').textContent = fmt(last.t2);
+        document.getElementById('dev2-t3').textContent = fmt(last.t3);
+        document.getElementById('dev2-t4').textContent = fmt(last.t4);
     }
 }
