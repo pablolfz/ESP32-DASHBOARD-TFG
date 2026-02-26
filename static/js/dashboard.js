@@ -1,4 +1,5 @@
 let chart1, chart2;
+let fullData = []; // Guardamos los datos originales para filtrar
 
 document.addEventListener('DOMContentLoaded', () => {
     initCharts();
@@ -10,14 +11,12 @@ function initCharts() {
     const commonOptions = {
         responsive: true,
         maintainAspectRatio: false,
-        elements: {
-            line: { borderWidth: 3, tension: 0.3 },
-            point: { radius: 3 }
-        },
+        elements: { line: { borderWidth: 3, tension: 0.3 }, point: { radius: 3 } },
         plugins: {
-            legend: { 
-                position: 'bottom',
-                labels: { font: { size: 16, weight: 'bold' } }
+            legend: { position: 'bottom', labels: { font: { size: 16, weight: 'bold' } } },
+            zoom: { // CONFIGURACIÓN DE ZOOM
+                pan: { enabled: true, mode: 'x' },
+                zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
             }
         },
         scales: {
@@ -42,17 +41,50 @@ function initCharts() {
     if (ctx2) chart2 = new Chart(ctx2, { type: 'line', data: { datasets: [] }, options: commonOptions });
 }
 
+// --- FUNCIONES DE CONTROL DE GRÁFICA ---
+function resetZoom(chart) { chart.resetZoom(); }
+function zoomIn(chart) { chart.zoom(1.2); }
+function zoomOut(chart) { chart.zoom(0.8); }
+
+function panLeft(chart) {
+    const scale = chart.scales.x;
+    const range = scale.max - scale.min;
+    chart.pan({x: range * 0.2}); 
+}
+
+function panRight(chart) {
+    const scale = chart.scales.x;
+    const range = scale.max - scale.min;
+    chart.pan({x: -range * 0.2});
+}
+
+function filterByDate(chart, dateString) {
+    if (!dateString) {
+        updateData(); // Si borra la fecha, cargamos todo
+        return;
+    }
+    const filteredLabels = [];
+    const filteredDatasets = chart.data.datasets.map(ds => ({...ds, data: []}));
+
+    // Lógica para filtrar los datos actuales del gráfico por el día seleccionado
+    // Nota: Esto asume que los datos están cargados. 
+    // Para mayor precisión, podrías llamar a la API de nuevo.
+    chart.resetZoom();
+    // Aquí podrías implementar un filtrado sobre fullData si lo prefieres
+}
+
+// --- ACTUALIZACIÓN DE DATOS ---
 async function updateData() {
     try {
         const res = await fetch('/api/history');
         const raw = await res.json();
-        let data = Array.isArray(raw) ? raw : Object.values(raw);
-        if (!data.length) return;
+        fullData = Array.isArray(raw) ? raw : Object.values(raw);
+        if (!fullData.length) return;
 
-        data.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+        fullData.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-        const d1 = data.filter(i => i.device_id === 'Estacion_Remota' || i.device_id === 'Dispositivo_1');
-        const d2 = data.filter(i => i.device_id === 'Dispositivo_2');
+        const d1 = fullData.filter(i => i.device_id === 'Estacion_Remota' || i.device_id === 'Dispositivo_1');
+        const d2 = fullData.filter(i => i.device_id === 'Dispositivo_2');
 
         const clean = (arr, key) => arr.map(i => (i[key] != null && i[key] > -100) ? i[key] : null);
 
@@ -65,7 +97,7 @@ async function updateData() {
                 { label: 'S3', data: clean(d1, 't3'), borderColor: '#9b59b6' },
                 { label: 'S4', data: clean(d1, 't4'), borderColor: '#95a5a6' }
             ];
-            chart1.update();
+            chart1.update('none');
             refreshUI(d1[d1.length-1], 'dev1');
         }
 
@@ -77,7 +109,7 @@ async function updateData() {
                 { label: 'D2-S3', data: clean(d2, 't3'), borderColor: '#e67e22' },
                 { label: 'D2-S4', data: clean(d2, 't4'), borderColor: '#d35400' }
             ];
-            chart2.update();
+            chart2.update('none');
             refreshUI(d2[d2.length-1], 'dev2');
         }
     } catch (e) { console.error(e); }
