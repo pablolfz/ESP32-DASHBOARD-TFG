@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estación LoRa UGR - Dashboard Optimizado</title>
+    <title>Estación LoRa UGR - Dashboard Balanceado</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -20,12 +20,12 @@
                 </div>
                 <div class="logo-text">
                     <span class="header-title">Estación LoRa</span>
-                    <span class="header-subtitle">ETS Ing. Caminos</span>
+                    <span class="header-subtitle hide-mobile">ETS Ing. Caminos, Canales y Puertos</span>
                 </div>
             </div>
             <nav class="nav">
-                <a href="#" class="nav-link hide-mobile">Tiempo Real</a>
-                <a href="#seccion-historico" class="nav-link">Histórico</a>
+                <a href="#" class="nav-link">Tiempo Real</a>
+                <a href="#seccion-historico" class="nav-link hide-mobile">Histórico</a>
                 <a href="/api/download_csv" class="btn-csv">
                     <i class="fa-solid fa-file-csv"></i> <span class="hide-mobile">Descargar CSV</span>
                 </a>
@@ -36,7 +36,7 @@
 
     <div class="container">
         <h1 class="main-title">Estado del Sistema</h1>
-        <p class="last-update" id="currentTime">Sincronizando...</p>
+        <p class="last-update" id="currentTime">Cargando datos...</p>
 
         <div class="current-data-grid">
             <div class="data-box" id="box-env">
@@ -92,7 +92,6 @@
                 </div>
                 <div class="canvas-wrapper"><canvas id="chart1"></canvas></div>
             </div>
-
             <div class="chart-container">
                 <h2>Historial Estación 2</h2>
                 <div class="chart-toolbar">
@@ -105,7 +104,6 @@
                 </div>
                 <div class="canvas-wrapper"><canvas id="chart2"></canvas></div>
             </div>
-
             <div class="chart-container">
                 <h2>Historial Estación 3</h2>
                 <div class="chart-toolbar">
