@@ -1,254 +1,78 @@
-/*
- * Dashboard Multisensor LoRa - Estilo Profesional Final
- * Optimizado para visualización de dos dispositivos y gráficas verticales
- */
-
 :root {
     --color-bg: #f0f2f5;
     --color-primary: #2c3e50;
     --color-header: #ffffff;
     --color-accent: #3498db;
-    --color-danger: #e74c3c;
     --color-success: #27ae60;
     --border-card: #e1e4e8;
     --bg-card: #ffffff;
-    
-    /* Colores temáticos para las tarjetas */
-    --color-temp: #fff9db;   /* Amarillo suave (Ambiente) */
-    --color-hum: #e3f2fd;    /* Azul suave (Humedad) */
-    --color-sondas1: #f3e5f5; /* Púrpura (Dev 1) */
-    --color-sondas2: #fdf2e9; /* Naranja (Dev 2) */
-    --color-sig: #e8f5e9;    /* Verde (Señal) */
-}
-
-/* --- CONFIGURACIÓN BASE --- */
-html {
-    scroll-behavior: smooth;
+    --color-temp: #fff9db;
+    --color-hum: #e3f2fd;
+    --color-sig: #e8f5e9;
 }
 
 body {
-    font-family: 'Open Sans', system-ui, -apple-system, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: var(--color-bg);
-    color: var(--color-primary);
-    line-height: 1.6;
+    font-family: 'Open Sans', sans-serif;
+    margin: 0; background-color: var(--color-bg);
     overflow-x: hidden;
 }
 
-/* --- HEADER (Arreglado: Logos y Botones) --- */
 .header {
     background-color: var(--color-header);
-    padding: 0 5%;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
+    padding: 0 2.5%; /* Margen lateral estrecho */
     height: 85px;
+    display: flex; justify-content: space-between; align-items: center;
+    position: sticky; top: 0; z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
-.logo {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    height: 100%;
-}
+.header-logo { height: 60px; width: auto; object-fit: contain; }
 
-/* Evita que el logo de la UGR se vea gigante */
-.header-logo {
-    height: 60px;
-    width: auto;
-    object-fit: contain;
-}
-
-.logo-text {
-    display: flex;
-    flex-direction: column;
-}
-
-.header-title {
-    font-size: 1.25rem;
-    font-weight: 800;
-    margin: 0;
-    color: var(--color-primary);
-}
-
-.header-subtitle {
-    font-size: 0.75rem;
-    color: #7f8c8d;
-    margin: 0;
-}
-
-/* Navegación y Botones */
-.nav {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.nav a {
-    text-decoration: none;
-    color: var(--color-primary);
-    font-weight: 600;
-    font-size: 0.9rem;
-    padding: 0.6rem 1rem;
-    border-radius: 6px;
-    transition: all 0.3s ease;
-    white-space: nowrap;
-}
-
-.nav a:hover {
-    background-color: #f8f9fa;
-    color: var(--color-accent);
-}
-
-/* Botón especial para CSV */
-.btn-csv {
-    background-color: var(--color-success) !important;
-    color: white !important;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.btn-csv:hover {
-    background-color: #219150 !important;
-    transform: translateY(-1px);
-}
-
-/* --- CONTENIDO PRINCIPAL (Márgenes Estrechos) --- */
 .container {
-    max-width: 95%;      /* Aumentamos del 1200px/1300px original al 95% */
-    margin: 1.5rem auto; /* Mantenemos el centrado */
-    padding: 0 1rem;     /* Reducimos el padding lateral interno */
+    max-width: 95%; /* Aprovecha casi todo el ancho */
+    margin: 1.5rem auto;
+    padding: 0 1rem;
 }
 
-h1 {
-    font-size: 2rem;
-    font-weight: 800;
-    margin-bottom: 0.5rem;
-}
-
-.last-update {
-    color: #7f8c8d;
-    font-size: 0.9rem;
-    margin-bottom: 2rem;
-}
-
-/* --- GRID DE TARJETAS (CARDS) --- */
 .current-data-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 3rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.2rem;
+    margin-bottom: 2.5rem;
 }
 
 .data-box {
     background-color: var(--bg-card);
-    padding: 1.5rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    padding: 1.2rem; border-radius: 12px;
     border: 1px solid var(--border-card);
-    transition: transform 0.2s ease;
+    border-top: 5px solid var(--color-primary);
 }
 
-.data-box:hover {
-    transform: translateY(-5px);
-}
+.data-value { font-size: 2.3rem; font-weight: 800; margin: 5px 0; }
+.data-value-small { display: flex; justify-content: space-between; font-weight: 700; margin: 4px 0; }
 
-.data-box h3 {
-    margin: 0 0 15px 0;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #7f8c8d;
-    display: flex;
-    justify-content: space-between;
-}
-
-.data-value {
-    font-size: 2.6rem;
-    font-weight: 800;
-    margin: 10px 0;
-}
-
-.data-value-small {
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin: 6px 0;
-    display: flex;
-    justify-content: space-between;
-    border-bottom: 1px solid rgba(0,0,0,0.05);
-}
-
-/* Colores específicos por ID */
-#box-temp-aht { border-top: 5px solid #f1c40f; background-color: var(--color-temp); }
-#box-humidity { border-top: 5px solid #3498db; background-color: var(--color-hum); }
-#box-signal   { border-top: 5px solid #2ecc71; background-color: var(--color-sig); }
-
-.icon-box {
-    font-size: 1.4rem;
-    opacity: 0.5;
-}
-
-/* --- GRÁFICAS (UNA DEBAJO DE OTRA) --- */
 .charts-grid {
     display: flex;
-    flex-direction: column; /* Apilado vertical */
-    gap: 3.5rem;
-    margin-top: 2rem;
+    flex-direction: column; /* Una debajo de otra */
+    gap: 3rem;
 }
 
 .chart-container {
     background-color: var(--color-header);
-    padding: 1.8rem;
-    border-radius: 15px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    padding: 2rem; border-radius: 15px;
     border: 1px solid var(--border-card);
 }
 
 .chart-container h2 {
-    font-size: 1.4rem;
-    margin-bottom: 1.5rem;
-    border-left: 5px solid var(--color-accent);
-    padding-left: 15px;
+    font-size: 1.8rem; /* Fuente de título más grande */
+    border-left: 6px solid var(--color-accent);
+    padding-left: 20px;
 }
 
-/* Wrapper para que Chart.js tenga espacio */
-.canvas-wrapper {
-    position: relative;
-    height: 450px; /* Altura ideal para lectura */
-    width: 100%;
-    background-color: #fafafa;
-    border-radius: 10px;
-    padding: 10px;
-}
+.canvas-wrapper { height: 600px; width: 100%; }
 
-.divider {
-    border: 0;
-    height: 1px;
-    background: var(--border-card);
-    margin: 4rem 0;
+.btn-csv {
+    background-color: var(--color-success) !important;
+    color: white !important;
+    padding: 8px 15px; border-radius: 6px; text-decoration: none;
 }
-
-/* --- RESPONSIVIDAD MÓVIL --- */
-@media (max-width: 768px) {
-    .header {
-        height: auto;
-        padding: 1rem;
-        flex-direction: column;
-        gap: 15px;
-    }
-    .nav {
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-    .canvas-wrapper {
-        height: 320px;
-    }
-}
-
