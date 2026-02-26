@@ -1,121 +1,175 @@
 /**
- * Dashboard Multi-sensor LoRa - Versión Firebase Blindada
+ * Dashboard Multi-sensor LoRa - Versión Multi-dispositivo (Firebase)
  */
 
-let tempChart, batteryChart;
+let tempChart, humChart;
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Inicialización de gráficos y carga de datos
     initCharts();
     fetchAndDrawHistoricalData();
 
-    // Refresco automático
-    setInterval(fetchAndDrawHistoricalData, 30000); 
+    // Refresco automático cada 30 segundos
+    setInterval(() => {
+        console.log("Actualizando datos de dispositivos...");
+        fetchAndDrawHistoricalData();
+    }, 30000);
 });
 
+/**
+ * Configuración inicial de Chart.js
+ */
 function initCharts() {
     const commonOptions = {
         responsive: true,
         maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'bottom' }
+        },
         scales: {
-            x: { type: 'time', time: { unit: 'minute' } },
-            y: { beginAtZero: false }
+            x: { 
+                type: 'time', 
+                time: { unit: 'minute', displayFormats: { minute: 'HH:mm' } },
+                title: { display: true, text: 'Hora' }
+            },
+            y: { 
+                beginAtZero: false,
+                title: { display: true, text: 'Valor' }
+            }
         }
     };
 
+    // Gráfico 1: Todo el Dispositivo 1 (Ambiente + 4 Sondas)
     const ctxTemp = document.getElementById('tempChart')?.getContext('2d');
     if (ctxTemp) {
         tempChart = new Chart(ctxTemp, {
             type: 'line',
             data: { datasets: [] },
-            options: commonOptions
+            options: {
+                ...commonOptions,
+                plugins: {
+                    ...commonOptions.plugins,
+                    title: { display: true, text: 'Historial Dispositivo 1' }
+                }
+            }
         });
     }
 
+    // Gráfico 2: Todo el Dispositivo 2 (4 Sondas)
     const ctxHum = document.getElementById('batteryChart')?.getContext('2d');
     if (ctxHum) {
-        batteryChart = new Chart(ctxHum, {
+        humChart = new Chart(ctxHum, {
             type: 'line',
             data: { datasets: [] },
-            options: { ...commonOptions, scales: { y: { min: 0, max: 100 } } }
+            options: {
+                ...commonOptions,
+                plugins: {
+                    ...commonOptions.plugins,
+                    title: { display: true, text: 'Historial Dispositivo 2' }
+                }
+            }
         });
     }
 }
 
+/**
+ * Función principal de obtención y procesado de datos
+ */
 async function fetchAndDrawHistoricalData() {
     try {
         const response = await fetch('/api/history');
         const rawData = await response.json();
         
-        // DEBUG: Mira la consola del navegador (F12) para ver si llega esto
-        console.log("Datos recibidos de la API:", rawData);
-
-        // Convertir a array si Firebase envió un objeto
+        // Convertir objeto de Firebase a Array y ordenar por tiempo
         let data = Array.isArray(rawData) ? rawData : Object.values(rawData);
+        if (!data || data.length === 0) return;
         
-        if (!data || data.length === 0) {
-            console.warn("La base de datos está vacía.");
-            return;
-        }
-
-        // Ordenar por fecha por si Firebase los mandó desordenados
         data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-        const lastReading = data[data.length - 1];
-        const labels = data.map(item => new Date(item.timestamp));
+        // Separar datos por ID de dispositivo
+        const dataDev1 = data.filter(item => item.device_id === 'Estacion_Remota' || item.device_id === 'Dispositivo_1');
+        const dataDev2 = data.filter(item => item.device_id === 'Dispositivo_2');
 
-        const getCleanData = (key) => data.map(item => {
+        // Helper para limpiar datos erróneos (-127)
+        const clean = (arr, key) => arr.map(item => {
             const val = parseFloat(item[key]);
             return (!isNaN(val) && val > -120) ? val : null;
         });
 
-        // Actualizar Gráficas
-        if (tempChart) {
-            tempChart.data.labels = labels;
+        // --- ACTUALIZAR GRÁFICA DISPOSITIVO 1 ---
+        if (tempChart && dataDev1.length > 0) {
+            const labels1 = dataDev1.map(item => new Date(item.timestamp));
+            tempChart.data.labels = labels1;
             tempChart.data.datasets = [
-                { label: 'Ambiente', data: getCleanData('t_aht'), borderColor: '#ff6384' },
-                { label: 'S1', data: getCleanData('t1'), borderColor: '#ff9f40' },
-                { label: 'S2', data: getCleanData('t2'), borderColor: '#4bc0c0' },
-                { label: 'S3', data: getCleanData('t3'), borderColor: '#9966ff' },
-                { label: 'S4', data: getCleanData('t4'), borderColor: '#c9cbcf' }
+                { label: 'Ambiente', data: clean(dataDev1, 't_aht'), borderColor: '#ff6384', tension: 0.3 },
+                { label: 'S1', data: clean(dataDev1, 't1'), borderColor: '#ff9f40', tension: 0.1 },
+                { label: 'S2', data: clean(dataDev1, 't2'), borderColor: '#4bc0c0', tension: 0.1 },
+                { label: 'S3', data: clean(dataDev1, 't3'), borderColor: '#9966ff', tension: 0.1 },
+                { label: 'S4', data: clean(dataDev1, 't4'), borderColor: '#c9cbcf', tension: 0.1 }
             ];
             tempChart.update('none');
+            
+            // Actualizar tarjetas del Dispositivo 1
+            updateUIDev1(dataDev1[dataDev1.length - 1]);
         }
 
-        if (batteryChart) {
-            batteryChart.data.labels = labels;
-            batteryChart.data.datasets = [
-                { label: 'Humedad %', data: getCleanData('h_aht'), borderColor: '#36a2eb' }
+        // --- ACTUALIZAR GRÁFICA DISPOSITIVO 2 ---
+        if (humChart && dataDev2.length > 0) {
+            const labels2 = dataDev2.map(item => new Date(item.timestamp));
+            humChart.data.labels = labels2;
+            humChart.data.datasets = [
+                { label: 'S1 (D2)', data: clean(dataDev2, 't1'), borderColor: '#2ecc71', tension: 0.1 },
+                { label: 'S2 (D2)', data: clean(dataDev2, 't2'), borderColor: '#27ae60', tension: 0.1 },
+                { label: 'S3 (D2)', data: clean(dataDev2, 't3'), borderColor: '#e67e22', tension: 0.1 },
+                { label: 'S4 (D2)', data: clean(dataDev2, 't4'), borderColor: '#d35400', tension: 0.1 }
             ];
-            batteryChart.update('none');
+            humChart.update('none');
+            
+            // Actualizar tarjetas del Dispositivo 2
+            updateUIDev2(dataDev2[dataDev2.length - 1]);
         }
-
-        // Actualizar tarjetas (Cards) con IDs genéricas por si acaso
-        updateUI(lastReading);
 
     } catch (error) {
-        console.error('Error cargando datos:', error);
+        console.error('Error al procesar datos:', error);
     }
 }
 
-function updateUI(last) {
-    const setSafeText = (id, text) => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = text;
-    };
-
+/**
+ * Actualiza la UI del Dispositivo 1 (Ambiente, Humedad, Sondas 1-4 y Señal)
+ */
+function updateUIDev1(last) {
     const fmt = (val) => (val != null && val > -120) ? parseFloat(val).toFixed(1) : "--";
-
-    setSafeText('current-temp1-value', `${fmt(last.t_aht)} °C`);
-    setSafeText('current-humidity-value', `${fmt(last.h_aht)} %`);
-    setSafeText('current-signal-value', `${last.rssi || "--"} dBm`);
     
-    // IDs de las sondas Dallas
-    setSafeText('val-t1', fmt(last.t1));
-    setSafeText('val-t2', fmt(last.t2));
-    setSafeText('val-t3', fmt(last.t3));
-    setSafeText('val-t4', fmt(last.t4));
+    setText('current-temp1-value', `${fmt(last.t_aht)} °C`);
+    setText('current-humidity-value', `${fmt(last.h_aht)} %`);
+    setText('current-signal-value', `${last.rssi || "--"} dBm`);
+    
+    setText('val-t1', fmt(last.t1));
+    setText('val-t2', fmt(last.t2));
+    setText('val-t3', fmt(last.t3));
+    setText('val-t4', fmt(last.t4));
 
     if (last.timestamp) {
-        setSafeText('currentTime', `Última: ${new Date(last.timestamp).toLocaleTimeString()}`);
+        setText('currentTime', `Sincronizado: ${new Date(last.timestamp).toLocaleTimeString()}`);
     }
+}
+
+/**
+ * Actualiza la UI del Dispositivo 2 (Sondas 5-8 o S1-S4 del segundo dev)
+ */
+function updateUIDev2(last) {
+    const fmt = (val) => (val != null && val > -120) ? parseFloat(val).toFixed(1) : "--";
+    
+    setText('dev2-t1', fmt(last.t1));
+    setText('dev2-t2', fmt(last.t2));
+    setText('dev2-t3', fmt(last.t3));
+    setText('dev2-t4', fmt(last.t4));
+}
+
+/**
+ * Helper para evitar errores si un ID no existe en el HTML
+ */
+function setText(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
 }
