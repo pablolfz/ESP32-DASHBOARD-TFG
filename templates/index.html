@@ -3,74 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Multi-sensor TFG</title>
+    <title>Estación LoRa - Dashboard TFG</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    
+    <style>
+        /* Estilo para el desplazamiento suave */
+        html {
+            scroll-behavior: smooth;
+        }
+        .data-value-small {
+            font-size: 1.1rem;
+            margin: 5px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        .data-value-small b {
+            color: #2c3e50;
+        }
+        .canvas-wrapper {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+    </style>
 </head>
 <body>
     <header class="header">
         <div class="logo">
             <img src="/static/images/logo_ugr1.png" alt="Logo UGR" class="header-logo">
-            <span class="header-title">Monitorización LoRa</span>
+            <div class="logo-text">
+                <span class="header-title">Estación LoRa</span>
+                <span class="header-subtitle">ETS Ing. Caminos, Canales y Puertos</span>
+            </div>
         </div>
         <nav class="nav">
+            <a href="#">Tiempo Real</a>
+            <a href="#seccion-historico">Histórico</a>
             <a href="#" onclick="location.reload()">Actualizar</a>
-            <span id="currentTime" style="color: #666; font-size: 0.8rem; margin-left: 15px;">Esperando datos...</span>
+            <a href="/api/history" target="_blank" class="btn-download">Descargar JSON</a>
         </nav>
     </header>
 
     <div class="container">
-        <h1>Mediciones a tiempo real</h1>
-        <p class="subtitle">Visualización de datos de sensores remotos vía Firebase</p>
+        <section class="top-section">
+            <h1>Mediciones a tiempo real</h1>
+            <p class="last-update" id="currentTime">Esperando sincronización...</p>
+        </section>
 
         <div class="current-data-grid">
             <div class="data-box" id="box-temp-aht">
-                <h3>Ambiente (AHT20) <i class="fa-solid fa-cloud-sun icon-box"></i></h3>
+                <h3>Ambiente <i class="fa-solid fa-cloud-sun icon-box"></i></h3>
                 <div class="data-value" id="current-temp1-value">-- °C</div>
+                <small>Sensor AHT20</small>
             </div>
 
             <div class="data-box" id="box-humidity">
-                <h3>Humedad Ambiente <i class="fa-solid fa-droplet icon-box"></i></h3>
+                <h3>Humedad <i class="fa-solid fa-droplet icon-box"></i></h3>
                 <div class="data-value" id="current-humidity-value">-- %</div>
+                <small>Relativa Ambiente</small>
             </div>
 
             <div class="data-box" style="border-top: 5px solid #9b59b6; background-color: #f3e5f5;">
                 <h3>Sondas Dispositivo 1 <i class="fa-solid fa-temperature-list icon-box"></i></h3>
-                <div class="data-value-small"><span>S1:</span> <b id="val-t1">--</b> °C</div>
-                <div class="data-value-small"><span>S2:</span> <b id="val-t2">--</b> °C</div>
-                <div class="data-value-small"><span>S3:</span> <b id="val-t3">--</b> °C</div>
-                <div class="data-value-small"><span>S4:</span> <b id="val-t4">--</b> °C</div>
+                <div class="data-value-small"><span>Sonda 1:</span> <b id="val-t1">--</b> °C</div>
+                <div class="data-value-small"><span>Sonda 2:</span> <b id="val-t2">--</b> °C</div>
+                <div class="data-value-small"><span>Sonda 3:</span> <b id="val-t3">--</b> °C</div>
+                <div class="data-value-small"><span>Sonda 4:</span> <b id="val-t4">--</b> °C</div>
             </div>
 
             <div class="data-box" style="border-top: 5px solid #e67e22; background-color: #fdf2e9;">
                 <h3>Sondas Dispositivo 2 <i class="fa-solid fa-microchip icon-box"></i></h3>
-                <div class="data-value-small"><span>S1:</span> <b id="dev2-t1">--</b> °C</div>
-                <div class="data-value-small"><span>S2:</span> <b id="dev2-t2">--</b> °C</div>
-                <div class="data-value-small"><span>S3:</span> <b id="dev2-t3">--</b> °C</div>
-                <div class="data-value-small"><span>S4:</span> <b id="dev2-t4">--</b> °C</div>
+                <div class="data-value-small"><span>Sonda 1:</span> <b id="dev2-t1">--</b> °C</div>
+                <div class="data-value-small"><span>Sonda 2:</span> <b id="dev2-t2">--</b> °C</div>
+                <div class="data-value-small"><span>Sonda 3:</span> <b id="dev2-t3">--</b> °C</div>
+                <div class="data-value-small"><span>Sonda 4:</span> <b id="dev2-t4">--</b> °C</div>
             </div>
 
             <div class="data-box" id="box-signal">
-                <h3>Intensidad Señal <i class="fa-solid fa-signal icon-box"></i></h3>
+                <h3>Señal LoRa <i class="fa-solid fa-signal icon-box"></i></h3>
                 <div class="data-value" id="current-signal-value">-- dBm</div>
+                <small id="signal-text">Sin conexión</small>
             </div>
         </div>
 
-        <div class="charts-grid">
+        <hr class="divider">
+
+        <div id="seccion-historico" class="charts-section">
             <div class="chart-container">
-                <h2>Historial Dispositivo 1 (Ambiente + Sondas)</h2>
+                <h2><i class="fa-solid fa-chart-line"></i> Historial Dispositivo 1 (Ambiente + Sondas)</h2>
                 <div class="canvas-wrapper">
                     <canvas id="tempChart"></canvas>
                 </div>
             </div>
-            <div class="chart-container">
-                <h2>Historial Dispositivo 2 (Sondas 1-4)</h2>
+
+            <div class="chart-container" style="margin-top: 40px;">
+                <h2><i class="fa-solid fa-chart-area"></i> Historial Dispositivo 2 (Temperaturas)</h2>
                 <div class="canvas-wrapper">
                     <canvas id="batteryChart"></canvas>
                 </div>
             </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px; padding-bottom: 50px;">
+            <a href="#" class="btn-back-top"><i class="fa-solid fa-arrow-up"></i> Volver a Tiempo Real</a>
         </div>
     </div>
 
