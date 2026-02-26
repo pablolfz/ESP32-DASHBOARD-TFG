@@ -1,51 +1,53 @@
-from flask import Flask, request, jsonify, render_template
-from datetime import datetime
-import os
-import requests
+import csv
+import io
+from datetime import datetime, timedelta
+from flask import make_response
 
-app = Flask(__name__)
+# ... (resto de tu app.py)
 
-FIREBASE_URL = "https://tfg2026-511e7-default-rtdb.europe-west1.firebasedatabase.app/readings.json"
-
-def safe_float(value):
-    try: return float(value)
-    except: return None
-
-@app.route('/api/data', methods=['POST'])
-def receive_data():
+@app.route('/api/download_csv')
+def download_csv():
     try:
-        data = request.get_json()
-        payload = {
-            "timestamp": datetime.now().isoformat(),
-            "device_id": data.get('id', 'Estacion_Remota'),
-            "t_aht": safe_float(data.get('t_aht')),
-            "h_aht": safe_float(data.get('h_aht')),
-            "t1": safe_float(data.get('t1')),
-            "t2": safe_float(data.get('t2')),
-            "t3": safe_float(data.get('t3')),
-            "t4": safe_float(data.get('t4')),
-            "rssi": safe_float(data.get('rssi'))
-        }
-        requests.post(FIREBASE_URL, json=payload)
-        return jsonify({"status": "success"}), 200
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-@app.route('/api/history')
-def get_history():
-    try:
+        # 1. Obtener datos de Firebase
         response = requests.get(FIREBASE_URL)
         fb_data = response.json()
-        history_data = [fb_data[k] for k in fb_data] if fb_data else []
-        return jsonify(history_data)
-    except:
-        return jsonify([]), 500
+        if not fb_data:
+            return "No hay datos para descargar", 404
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+        # 2. Filtrar por fecha (30 días atrás)
+        fecha_limite = datetime.now() - timedelta(days=30)
+        all_data = [fb_data[k] for k in fb_data]
+        
+        # 3. Crear el archivo CSV en memoria
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Cabecera del CSV
+        writer.writerow(['Fecha y Hora', 'Dispositivo', 'Temp Ambiente', 'Humedad', 'S1', 'S2', 'S3', 'S4', 'RSSI'])
 
-if __name__ == '__main__':
-    # Esto es vital para Render
-    port = int(os.environ.get('PORT', 10000))
-    app.run(host='0.0.0.0', port=port)
+        for item in all_data:
+            # Convertir timestamp ISO a objeto datetime para comparar
+            fecha_item = datetime.fromisoformat(item.get('timestamp'))
+            
+            if fecha_item >= fecha_limite:
+                writer.writerow([
+                    item.get('timestamp'),
+                    item.get('device_id'),
+                    item.get('t_aht'),
+                    item.get('h_aht'),
+                    item.get('t1'),
+                    item.get('t2'),
+                    item.get('t3'),
+                    item.get('t4'),
+                    item.get('rssi')
+                ])
+
+        # 4. Configurar la respuesta para el navegador
+        output.seek(0)
+        response = make_response(output.getvalue())
+        response.headers["Content-Disposition"] = f"attachment; filename=log_sensores_{datetime.now().strftime('%Y-%m-%d')}.csv"
+        response.headers["Content-type"] = "text/csv"
+        return response
+
+    except Exception as e:
+        return str(e), 500
