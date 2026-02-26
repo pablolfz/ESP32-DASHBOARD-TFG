@@ -22,9 +22,11 @@ def index():
 def receive_data():
     try:
         data = request.get_json()
+        device_id = data.get('id', 'Estacion_1')
+        
         payload = {
             "timestamp": datetime.now().isoformat(),
-            "device_id": data.get('id', 'Estacion_Remota'),
+            "device_id": device_id,
             "t_aht": safe_float(data.get('t_aht')),
             "h_aht": safe_float(data.get('h_aht')),
             "t1": safe_float(data.get('t1')),
@@ -58,18 +60,20 @@ def download_csv():
         fb_data = response.json()
         output = io.StringIO()
         writer = csv.writer(output)
-        writer.writerow(['Fecha ISO', 'Dispositivo', 'Temp_Ambiente', 'Hum_Ambiente', 'S1', 'S2', 'S3', 'S4', 'RSSI'])
+        writer.writerow(['Fecha', 'ID', 'T_Amb', 'H_Amb', 'S1', 'S2', 'S3', 'S4', 'RSSI'])
         items = fb_data.values() if isinstance(fb_data, dict) else fb_data
         for item in items:
             if not item: continue
-            writer.writerow([item.get('timestamp'), item.get('device_id'), item.get('t_aht'), item.get('h_aht'), item.get('t1'), item.get('t2'), item.get('t3'), item.get('t4'), item.get('rssi')])
+            writer.writerow([item.get('timestamp'), item.get('device_id'), item.get('t_aht'), 
+                             item.get('h_aht'), item.get('t1'), item.get('t2'), 
+                             item.get('t3'), item.get('t4'), item.get('rssi')])
         output.seek(0)
         res = make_response(output.getvalue())
-        res.headers["Content-Disposition"] = f"attachment; filename=log_lora_{datetime.now().strftime('%Y%m%d')}.csv"
+        res.headers["Content-Disposition"] = f"attachment; filename=datos_lora_{datetime.now().strftime('%Y%m%d')}.csv"
         res.headers["Content-type"] = "text/csv"
         return res
     except: return "Error", 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=port)
