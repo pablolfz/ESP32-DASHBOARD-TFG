@@ -3,120 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard LoRa | Estación Multisensor</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;800&display=swap" rel="stylesheet">
-    
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Dashboard Multi-sensor TFG</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 </head>
 <body>
-    
     <header class="header">
         <div class="logo">
-            <div class="logo-images">
-                <img src="{{ url_for('static', filename='images/logo_ugr1.png') }}" alt="Logo UGR" class="header-logo" style="height: 60px;">
-                <img src="{{ url_for('static', filename='images/logo_ets.jpg') }}" alt="Logo ETS Caminos" class="header-logo" style="height: 60px;">
-            </div>
-            <span class="header-title">Estación LoRa</span>
+            <img src="/static/images/logo_ugr1.png" alt="Logo UGR" class="header-logo">
+            <span class="header-title">Monitorización LoRa</span>
         </div>
-    
         <nav class="nav">
-            <a href="#">Tiempo Real</a> 
-            <a href="#" onclick="downloadData()">Descargar CSV</a>
-            <a href="#" onclick="confirmCleanup()">Limpiar Historial</a>
-            <a href="#">Contacto</a>
+            <a href="#" onclick="location.reload()">Actualizar</a>
+            <span id="currentTime" style="color: #666; font-size: 0.8rem; margin-left: 15px;">Esperando datos...</span>
         </nav>
     </header>
 
     <div class="container">
         <h1>Mediciones a tiempo real</h1>
-        
-        <div id="message-container" class="message-container hidden"></div>
-
-        <p class="subtitle">Última lectura: <span id="currentTime">Esperando datos...</span></p>
+        <p class="subtitle">Visualización de datos de sensores remotos vía Firebase</p>
 
         <div class="current-data-grid">
-    <div class="data-box" id="box-temp-aht">
-        <h3>Ambiente (AHT20) <i class="fa-solid fa-cloud-sun icon-box"></i></h3>
-        <div class="data-value" id="current-temp1-value">-- °C</div>
-    </div>
+            <div class="data-box" id="box-temp-aht">
+                <h3>Ambiente (AHT20) <i class="fa-solid fa-cloud-sun icon-box"></i></h3>
+                <div class="data-value" id="current-temp1-value">-- °C</div>
+            </div>
 
-    <div class="data-box" id="box-humidity">
-        <h3>Humedad Ambiente <i class="fa-solid fa-droplet icon-box"></i></h3>
-        <div class="data-value" id="current-humidity-value">-- %</div>
-    </div>
+            <div class="data-box" id="box-humidity">
+                <h3>Humedad Ambiente <i class="fa-solid fa-droplet icon-box"></i></h3>
+                <div class="data-value" id="current-humidity-value">-- %</div>
+            </div>
 
-    <div class="data-box" style="border-top: 5px solid #9b59b6; background-color: #f3e5f5;">
-        <h3>Sondas Dispositivo 1 <i class="fa-solid fa-temperature-list icon-box"></i></h3>
-        <div class="data-value-small"><span>S1:</span> <b id="val-t1">--</b> °C</div>
-        <div class="data-value-small"><span>S2:</span> <b id="val-t2">--</b> °C</div>
-        <div class="data-value-small"><span>S3:</span> <b id="val-t3">--</b> °C</div>
-        <div class="data-value-small"><span>S4:</span> <b id="val-t4">--</b> °C</div>
-    </div>
+            <div class="data-box" style="border-top: 5px solid #9b59b6; background-color: #f3e5f5;">
+                <h3>Sondas Dispositivo 1 <i class="fa-solid fa-temperature-list icon-box"></i></h3>
+                <div class="data-value-small"><span>S1:</span> <b id="val-t1">--</b> °C</div>
+                <div class="data-value-small"><span>S2:</span> <b id="val-t2">--</b> °C</div>
+                <div class="data-value-small"><span>S3:</span> <b id="val-t3">--</b> °C</div>
+                <div class="data-value-small"><span>S4:</span> <b id="val-t4">--</b> °C</div>
+            </div>
 
-    <div class="data-box" style="border-top: 5px solid #e67e22; background-color: #fdf2e9;">
-        <h3>Sondas Dispositivo 2 <i class="fa-solid fa-microchip icon-box"></i></h3>
-        <div class="data-value-small"><span>S1:</span> <b id="dev2-t1">--</b> °C</div>
-        <div class="data-value-small"><span>S2:</span> <b id="dev2-t2">--</b> °C</div>
-        <div class="data-value-small"><span>S3:</span> <b id="dev2-t3">--</b> °C</div>
-        <div class="data-value-small"><span>S4:</span> <b id="dev2-t4">--</b> °C</div>
-    </div>
+            <div class="data-box" style="border-top: 5px solid #e67e22; background-color: #fdf2e9;">
+                <h3>Sondas Dispositivo 2 <i class="fa-solid fa-microchip icon-box"></i></h3>
+                <div class="data-value-small"><span>S1:</span> <b id="dev2-t1">--</b> °C</div>
+                <div class="data-value-small"><span>S2:</span> <b id="dev2-t2">--</b> °C</div>
+                <div class="data-value-small"><span>S3:</span> <b id="dev2-t3">--</b> °C</div>
+                <div class="data-value-small"><span>S4:</span> <b id="dev2-t4">--</b> °C</div>
+            </div>
 
-    <div class="data-box" id="box-signal">
-        <h3>Señal <i class="fa-solid fa-signal icon-box"></i></h3>
-        <div class="data-value" id="current-signal-value">-- dBm</div>
-    </div>
-</div>
-        
-        <br>
-        <h1>Histórico de Mediciones</h1>
+            <div class="data-box" id="box-signal">
+                <h3>Intensidad Señal <i class="fa-solid fa-signal icon-box"></i></h3>
+                <div class="data-value" id="current-signal-value">-- dBm</div>
+            </div>
+        </div>
 
         <div class="charts-grid">
-            
-            <div class="chart-container" style="grid-column: span 2;">
-               <h2>Temperaturas Históricas - Dispositivo 1</h2>
-                
-                <div class="chart-controls">
-                    <button onclick="resetZoom('tempChart')">Reset</button>
-                    <button onclick="buttonZoom('tempChart', -1)">Zoom In</button>
-                    <button onclick="buttonZoom('tempChart', 1)">Zoom Out</button>
-                    <button onclick="moveTime('tempChart', 1)">+1h</button>
-                    <button onclick="moveTime('tempChart', -1)">-1h</button>
-                    <input type="datetime-local" id="tempChartDatetime">
-                    <button onclick="jumpToTime('tempChart', 'tempChartDatetime')">Ir</button>
-                </div>
-
+            <div class="chart-container">
+                <h2>Historial Dispositivo 1 (Ambiente + Sondas)</h2>
                 <div class="canvas-wrapper">
-                    <canvas id="tempChart"></canvas> 
+                    <canvas id="tempChart"></canvas>
                 </div>
             </div>
-
-            <div class="chart-container" style="grid-column: span 2;">
-                <h2>Temperaturas Históricas - Dispositivo 2</h2>
-                
-                <div class="chart-controls">
-                    <button onclick="resetZoom('batteryChart')">Reset</button>
-                    <button onclick="buttonZoom('batteryChart', -1)">Zoom In</button>
-                    <button onclick="buttonZoom('batteryChart', 1)">Zoom Out</button>
-                    <input type="datetime-local" id="batteryChartDatetime">
-                    <button onclick="jumpToTime('batteryChart', 'batteryChartDatetime')">Ir</button>
-                </div>
-
+            <div class="chart-container">
+                <h2>Historial Dispositivo 2 (Sondas 1-4)</h2>
                 <div class="canvas-wrapper">
-                    <canvas id="batteryChart"></canvas> 
+                    <canvas id="batteryChart"></canvas>
                 </div>
             </div>
-            
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script> 
+    <script src="/static/js/dashboard.js"></script>
 </body>
 </html>
-
-
