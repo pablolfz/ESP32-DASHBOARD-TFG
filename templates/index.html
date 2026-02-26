@@ -14,7 +14,6 @@
 
     <style>
         html { scroll-behavior: smooth; }
-        /* Toolbar estilizada para no romper el diseño */
         .chart-toolbar {
             display: flex; align-items: center; gap: 8px;
             margin-bottom: 15px; padding: 10px;
@@ -30,19 +29,21 @@
 </head>
 <body>
     <header class="header">
-        <div class="logo">
-            <img src="/static/images/logo_ugr1.png" alt="UGR" class="header-logo">
-            <div class="logo-text">
-                <span class="header-title">Estación LoRa</span>
-                <span class="header-subtitle">ETS Ing. Caminos, Canales y Puertos</span>
+        <div class="header-content">
+            <div class="logo">
+                <img src="/static/images/logo_ugr1.png" alt="UGR" class="header-logo">
+                <div class="logo-text">
+                    <span class="header-title">Estación LoRa</span>
+                    <span class="header-subtitle">ETS Ing. Caminos, Canales y Puertos</span>
+                </div>
             </div>
+            <nav class="nav">
+                <a href="#">Tiempo Real</a>
+                <a href="#seccion-historico">Histórico</a>
+                <a href="/api/download_csv" class="btn-csv"><i class="fa-solid fa-file-csv"></i> Descargar CSV</a>
+                <a href="#" onclick="location.reload()">Actualizar</a>
+            </nav>
         </div>
-        <nav class="nav">
-            <a href="#">Tiempo Real</a>
-            <a href="#seccion-historico">Histórico</a>
-            <a href="/api/download_csv" class="btn-csv"><i class="fa-solid fa-file-csv"></i> Descargar CSV</a>
-            <a href="#" onclick="location.reload()">Actualizar</a>
-        </nav>
     </header>
 
     <div class="container">
@@ -54,35 +55,29 @@
                 <h3>Ambiente <i class="fa-solid fa-cloud-sun icon-box"></i></h3>
                 <div class="data-value" id="current-temp1-value">-- °C</div>
             </div>
-
             <div class="data-box" id="box-humidity">
                 <h3>Humedad <i class="fa-solid fa-droplet icon-box"></i></h3>
                 <div class="data-value" id="current-humidity-value">-- %</div>
             </div>
-
             <div class="data-box" style="border-top: 5px solid #9b59b6; background-color: #f3e5f5;">
                 <h3>Sondas Dev 1 <i class="fa-solid fa-temperature-half icon-box"></i></h3>
-                <div class="data-value-small"><span>S1:</span> <b id="val-t1">--</b> °C</div>
-                <div class="data-value-small"><span>S2:</span> <b id="val-t2">--</b> °C</div>
-                <div class="data-value-small"><span>S3:</span> <b id="val-t3">--</b> °C</div>
-                <div class="data-value-small"><span>S4:</span> <b id="val-t4">--</b> °C</div>
+                <div class="data-value-small"><span>S1:</span> <b id="val-t1">--</b></div>
+                <div class="data-value-small"><span>S2:</span> <b id="val-t2">--</b></div>
+                <div class="data-value-small"><span>S3:</span> <b id="val-t3">--</b></div>
+                <div class="data-value-small"><span>S4:</span> <b id="val-t4">--</b></div>
             </div>
-
             <div class="data-box" style="border-top: 5px solid #e67e22; background-color: #fdf2e9;">
                 <h3>Sondas Dev 2 <i class="fa-solid fa-microchip icon-box"></i></h3>
-                <div class="data-value-small"><span>S1:</span> <b id="dev2-t1">--</b> °C</div>
-                <div class="data-value-small"><span>S2:</span> <b id="dev2-t2">--</b> °C</div>
-                <div class="data-value-small"><span>S3:</span> <b id="dev2-t3">--</b> °C</div>
-                <div class="data-value-small"><span>S4:</span> <b id="dev2-t4">--</b> °C</div>
+                <div class="data-value-small"><span>S1:</span> <b id="dev2-t1">--</b></div>
+                <div class="data-value-small"><span>S2:</span> <b id="dev2-t2">--</b></div>
+                <div class="data-value-small"><span>S3:</span> <b id="dev2-t3">--</b></div>
+                <div class="data-value-small"><span>S4:</span> <b id="dev2-t4">--</b></div>
             </div>
-
             <div class="data-box" id="box-signal">
                 <h3>Señal <i class="fa-solid fa-signal icon-box"></i></h3>
                 <div class="data-value" id="current-signal-value">-- dBm</div>
             </div>
         </div>
-
-        <hr style="border: 0; height: 1px; background: #eee; margin: 40px 0;">
 
         <div id="seccion-historico" class="charts-grid">
             <div class="chart-container">
@@ -114,7 +109,6 @@
             </div>
         </div>
     </div>
-
     <script src="/static/js/dashboard.js"></script>
 </body>
 </html>
