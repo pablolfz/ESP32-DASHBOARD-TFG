@@ -88,5 +88,7 @@ def download_csv():
         return str(e), 500
 
 if __name__ == '__main__':
+    # Render usa la variable de entorno PORT, si no existe usamos 10000
     port = int(os.environ.get('PORT', 10000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port, debug=False)
+
