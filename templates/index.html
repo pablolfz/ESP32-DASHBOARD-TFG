@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estación LoRa UGR - Dashboard Móvil</title>
+    <title>Estación LoRa UGR - Dashboard Optimizado</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -13,20 +13,21 @@
 <body>
     <header class="header">
         <div class="header-content">
-            <div class="logo">
+            <div class="header-left">
                 <div class="logos-container">
                     <img src="/static/images/logo_ugr1.png" alt="UGR" class="header-logo">
                     <img src="/static/images/logo-grupo-labic.png" alt="LABIC" class="header-logo labic-logo">
                 </div>
                 <div class="logo-text">
                     <span class="header-title">Estación LoRa</span>
-                    <span class="header-subtitle">ETS Ing. Caminos, Canales y Puertos</span>
+                    <span class="header-subtitle">ETS Ing. Caminos</span>
                 </div>
             </div>
             <nav class="nav">
-                <a href="#seccion-historico" class="nav-link">Historial</a>
+                <a href="#" class="nav-link hide-mobile">Tiempo Real</a>
+                <a href="#seccion-historico" class="nav-link">Histórico</a>
                 <a href="/api/download_csv" class="btn-csv">
-                    <i class="fa-solid fa-file-csv"></i> <span class="btn-text">Descargar</span>
+                    <i class="fa-solid fa-file-csv"></i> <span class="hide-mobile">Descargar CSV</span>
                 </a>
                 <a href="#" onclick="location.reload()" class="nav-link"><i class="fa-solid fa-sync"></i></a>
             </nav>
@@ -55,7 +56,6 @@
                 <div class="data-value-small"><span>S3:</span> <b id="d1-s3">--</b></div>
                 <div class="data-value-small"><span>S4:</span> <b id="d1-s4">--</b></div>
             </div>
-
             <div class="data-box" id="box-dev2">
                 <h3>Sondas E2 <i class="fa-solid fa-temperature-half"></i></h3>
                 <div class="data-value-small"><span>S1:</span> <b id="d2-s1">--</b></div>
@@ -63,7 +63,6 @@
                 <div class="data-value-small"><span>S3:</span> <b id="d2-s3">--</b></div>
                 <div class="data-value-small"><span>S4:</span> <b id="d2-s4">--</b></div>
             </div>
-
             <div class="data-box" id="box-dev3">
                 <h3>Sondas E3 <i class="fa-solid fa-temperature-half"></i></h3>
                 <div class="data-value-small"><span>S1:</span> <b id="d3-s1">--</b></div>
@@ -85,22 +84,36 @@
                 <h2>Historial Estación 1</h2>
                 <div class="chart-toolbar">
                     <button onclick="chart1.resetZoom()"><i class="fa-solid fa-house"></i></button>
+                    <button onclick="chart1.zoom(1.1)"><i class="fa-solid fa-plus"></i></button>
+                    <button onclick="chart1.zoom(0.9)"><i class="fa-solid fa-minus"></i></button>
+                    <button onclick="moveChart(chart1, -0.1)"><i class="fa-solid fa-arrow-left"></i></button>
+                    <button onclick="moveChart(chart1, 0.1)"><i class="fa-solid fa-arrow-right"></i></button>
                     <input type="date" onchange="goToDate(chart1, this.value)">
                 </div>
                 <div class="canvas-wrapper"><canvas id="chart1"></canvas></div>
             </div>
+
             <div class="chart-container">
                 <h2>Historial Estación 2</h2>
                 <div class="chart-toolbar">
                     <button onclick="chart2.resetZoom()"><i class="fa-solid fa-house"></i></button>
+                    <button onclick="chart2.zoom(1.1)"><i class="fa-solid fa-plus"></i></button>
+                    <button onclick="chart2.zoom(0.9)"><i class="fa-solid fa-minus"></i></button>
+                    <button onclick="moveChart(chart2, -0.1)"><i class="fa-solid fa-arrow-left"></i></button>
+                    <button onclick="moveChart(chart2, 0.1)"><i class="fa-solid fa-arrow-right"></i></button>
                     <input type="date" onchange="goToDate(chart2, this.value)">
                 </div>
                 <div class="canvas-wrapper"><canvas id="chart2"></canvas></div>
             </div>
+
             <div class="chart-container">
                 <h2>Historial Estación 3</h2>
                 <div class="chart-toolbar">
                     <button onclick="chart3.resetZoom()"><i class="fa-solid fa-house"></i></button>
+                    <button onclick="chart3.zoom(1.1)"><i class="fa-solid fa-plus"></i></button>
+                    <button onclick="chart3.zoom(0.9)"><i class="fa-solid fa-minus"></i></button>
+                    <button onclick="moveChart(chart3, -0.1)"><i class="fa-solid fa-arrow-left"></i></button>
+                    <button onclick="moveChart(chart3, 0.1)"><i class="fa-solid fa-arrow-right"></i></button>
                     <input type="date" onchange="goToDate(chart3, this.value)">
                 </div>
                 <div class="canvas-wrapper"><canvas id="chart3"></canvas></div>
