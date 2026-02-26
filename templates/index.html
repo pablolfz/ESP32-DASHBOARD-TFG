@@ -1,114 +1,30 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estación LoRa UGR - Dashboard</title>
-    
-    <link rel="stylesheet" href="/static/css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+<div class="data-box" id="box-temp-aht">
+    <h3>Ambiente <i class="fa-solid fa-cloud-sun"></i></h3>
+    <div class="data-value" id="current-temp1-value">-- °C</div>
+</div>
 
-    <style>
-        html { scroll-behavior: smooth; }
-        .chart-toolbar {
-            display: flex; align-items: center; gap: 8px;
-            margin-bottom: 15px; padding: 10px;
-            background: #f8f9fa; border-radius: 8px; border: 1px solid #eee;
-        }
-        .chart-toolbar button {
-            padding: 6px 12px; background: white; border: 1px solid #ccc;
-            border-radius: 4px; cursor: pointer; transition: 0.2s;
-        }
-        .chart-toolbar button:hover { background: #e9ecef; }
-        .date-label { font-weight: bold; font-size: 14px; margin-left: auto; margin-right: 5px; }
-    </style>
-</head>
-<body>
-    <header class="header">
-        <div class="header-content">
-            <div class="logo">
-                <img src="/static/images/logo_ugr1.png" alt="UGR" class="header-logo">
-                <div class="logo-text">
-                    <span class="header-title">Estación LoRa</span>
-                    <span class="header-subtitle">ETS Ing. Caminos, Canales y Puertos</span>
-                </div>
-            </div>
-            <nav class="nav">
-                <a href="#">Tiempo Real</a>
-                <a href="#seccion-historico">Histórico</a>
-                <a href="/api/download_csv" class="btn-csv"><i class="fa-solid fa-file-csv"></i> Descargar CSV</a>
-                <a href="#" onclick="location.reload()">Actualizar</a>
-            </nav>
-        </div>
-    </header>
+<div class="data-box" id="box-humidity">
+    <h3>Humedad <i class="fa-solid fa-droplet"></i></h3>
+    <div class="data-value" id="current-humidity-value">-- %</div>
+</div>
 
-    <div class="container">
-        <h1>Mediciones a tiempo real</h1>
-        <p class="last-update" id="currentTime">Sincronizando con Firebase...</p>
+<div class="data-box" id="box-dev1">
+    <h3>Sondas Dev 1 <i class="fa-solid fa-temperature-half"></i></h3>
+    <div class="data-value-small"><span>S1:</span> <b id="val-t1">--</b></div>
+    <div class="data-value-small"><span>S2:</span> <b id="val-t2">--</b></div>
+    <div class="data-value-small"><span>S3:</span> <b id="val-t3">--</b></div>
+    <div class="data-value-small"><span>S4:</span> <b id="val-t4">--</b></div>
+</div>
 
-        <div class="current-data-grid">
-            <div class="data-box" id="box-temp-aht">
-                <h3>Ambiente <i class="fa-solid fa-cloud-sun icon-box"></i></h3>
-                <div class="data-value" id="current-temp1-value">-- °C</div>
-            </div>
-            <div class="data-box" id="box-humidity">
-                <h3>Humedad <i class="fa-solid fa-droplet icon-box"></i></h3>
-                <div class="data-value" id="current-humidity-value">-- %</div>
-            </div>
-            <div class="data-box" style="border-top: 5px solid #9b59b6; background-color: #f3e5f5;">
-                <h3>Sondas Dev 1 <i class="fa-solid fa-temperature-half icon-box"></i></h3>
-                <div class="data-value-small"><span>S1:</span> <b id="val-t1">--</b></div>
-                <div class="data-value-small"><span>S2:</span> <b id="val-t2">--</b></div>
-                <div class="data-value-small"><span>S3:</span> <b id="val-t3">--</b></div>
-                <div class="data-value-small"><span>S4:</span> <b id="val-t4">--</b></div>
-            </div>
-            <div class="data-box" style="border-top: 5px solid #e67e22; background-color: #fdf2e9;">
-                <h3>Sondas Dev 2 <i class="fa-solid fa-microchip icon-box"></i></h3>
-                <div class="data-value-small"><span>S1:</span> <b id="dev2-t1">--</b></div>
-                <div class="data-value-small"><span>S2:</span> <b id="dev2-t2">--</b></div>
-                <div class="data-value-small"><span>S3:</span> <b id="dev2-t3">--</b></div>
-                <div class="data-value-small"><span>S4:</span> <b id="dev2-t4">--</b></div>
-            </div>
-            <div class="data-box" id="box-signal">
-                <h3>Señal <i class="fa-solid fa-signal icon-box"></i></h3>
-                <div class="data-value" id="current-signal-value">-- dBm</div>
-            </div>
-        </div>
+<div class="data-box" id="box-dev2">
+    <h3>Sondas Dev 2 <i class="fa-solid fa-microchip"></i></h3>
+    <div class="data-value-small"><span>S1:</span> <b id="dev2-t1">--</b></div>
+    <div class="data-value-small"><span>S2:</span> <b id="dev2-t2">--</b></div>
+    <div class="data-value-small"><span>S3:</span> <b id="dev2-t3">--</b></div>
+    <div class="data-value-small"><span>S4:</span> <b id="dev2-t4">--</b></div>
+</div>
 
-        <div id="seccion-historico" class="charts-grid">
-            <div class="chart-container">
-                <h2>Historial Dispositivo 1</h2>
-                <div class="chart-toolbar">
-                    <button onclick="chart1.resetZoom()"><i class="fa-solid fa-house"></i> Home</button>
-                    <button onclick="chart1.zoom(1.1)"><i class="fa-solid fa-plus"></i></button>
-                    <button onclick="chart1.zoom(0.9)"><i class="fa-solid fa-minus"></i></button>
-                    <button onclick="moveChart(chart1, -0.1)"><i class="fa-solid fa-arrow-left"></i></button>
-                    <button onclick="moveChart(chart1, 0.1)"><i class="fa-solid fa-arrow-right"></i></button>
-                    <span class="date-label">Filtrar:</span>
-                    <input type="date" onchange="goToDate(chart1, this.value)">
-                </div>
-                <div class="canvas-wrapper"><canvas id="tempChart"></canvas></div>
-            </div>
-
-            <div class="chart-container">
-                <h2>Historial Dispositivo 2</h2>
-                <div class="chart-toolbar">
-                    <button onclick="chart2.resetZoom()"><i class="fa-solid fa-house"></i> Home</button>
-                    <button onclick="chart2.zoom(1.1)"><i class="fa-solid fa-plus"></i></button>
-                    <button onclick="chart2.zoom(0.9)"><i class="fa-solid fa-minus"></i></button>
-                    <button onclick="moveChart(chart2, -0.1)"><i class="fa-solid fa-arrow-left"></i></button>
-                    <button onclick="moveChart(chart2, 0.1)"><i class="fa-solid fa-arrow-right"></i></button>
-                    <span class="date-label">Filtrar:</span>
-                    <input type="date" onchange="goToDate(chart2, this.value)">
-                </div>
-                <div class="canvas-wrapper"><canvas id="batteryChart"></canvas></div>
-            </div>
-        </div>
-    </div>
-    <script src="/static/js/dashboard.js"></script>
-</body>
-</html>
+<div class="data-box" id="box-signal">
+    <h3>Señal <i class="fa-solid fa-signal"></i></h3>
+    <div class="data-value" id="current-signal-value">-- dBm</div>
+</div>
