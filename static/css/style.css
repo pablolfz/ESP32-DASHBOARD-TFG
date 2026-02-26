@@ -10,58 +10,69 @@
 
 body { font-family: 'Segoe UI', sans-serif; margin: 0; background-color: var(--color-bg); }
 
-/* HEADER COMPACTO */
-.header { background: white; height: 90px; display: flex; align-items: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-.header-content { width: 95%; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+/* HEADER BALANCEADO */
+.header { background: white; min-height: 85px; display: flex; align-items: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+.header-content { width: 96%; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
 
-.header-left { display: flex; align-items: center; gap: 10px; }
-.logos-container { display: flex; align-items: center; gap: 8px; border-right: 1px solid #eee; padding-right: 10px; }
-.header-logo { height: 50px; width: auto; }
+.header-left { display: flex; align-items: center; gap: 12px; }
+.logos-container { display: flex; align-items: center; gap: 10px; border-right: 1.5px solid #ddd; padding-right: 12px; }
+.header-logo { height: clamp(40px, 4vw, 65px); width: auto; } /* Escala con la pantalla */
+
 .logo-text { display: flex; flex-direction: column; }
-.header-title { font-weight: 800; font-size: 1.1rem; margin: 0; line-height: 1; }
-.header-subtitle { font-size: 0.7rem; color: #666; margin: 0; }
+.header-title { font-weight: 800; font-size: clamp(1rem, 2vw, 1.4rem); margin: 0; line-height: 1; }
+.header-subtitle { font-size: 0.8rem; color: #666; margin: 0; margin-top: 3px; }
 
-.nav { display: flex; gap: 12px; align-items: center; }
-.nav a { text-decoration: none; color: var(--color-primary); font-weight: 700; font-size: 0.85rem; }
-.btn-csv { background: #27ae60 !important; color: white !important; padding: 6px 10px; border-radius: 6px; display: flex; align-items: center; gap: 5px; }
+.nav { display: flex; gap: 15px; align-items: center; }
+.nav a { text-decoration: none; color: var(--color-primary); font-weight: 700; font-size: 0.95rem; transition: 0.3s; }
+.nav a:hover { color: #3498db; }
+.btn-csv { background: #27ae60 !important; color: white !important; padding: 8px 14px; border-radius: 6px; display: flex; align-items: center; gap: 6px; }
 
-/* GRID PRINCIPAL */
-.container { max-width: 98%; margin: 0.5rem auto; padding: 0 5px; }
-.current-data-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; margin-bottom: 1.5rem; }
-.data-box { padding: 0.8rem; border-radius: 10px; border-top: 4px solid #333; background: white; }
+/* GRID RECUADROS */
+.container { max-width: 98%; margin: 1rem auto; padding: 0 10px; }
+.current-data-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.8rem; margin-bottom: 2rem; }
 
+.data-box { padding: 1.2rem 1rem; border-radius: 12px; border-top: 5px solid #333; background: white; box-shadow: 0 3px 6px rgba(0,0,0,0.04); }
+.data-box h3 { font-size: 0.9rem; margin-top: 0; text-transform: uppercase; color: #444; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 10px; }
+
+/* Valores: Término medio */
+.env-row { display: flex; justify-content: space-between; font-size: 1.05rem; padding: 4px 0; border-bottom: 1px solid #fafafa; }
+.data-value-small { display: flex; justify-content: space-between; font-weight: 800; font-size: 1.15rem; padding: 6px 0; border-bottom: 1px solid #f5f5f5; }
+.data-value-small span { font-weight: 400; color: #666; font-size: 0.9rem; }
+
+/* GRÁFICAS */
+.chart-container { background: white; padding: 1.5rem; border-radius: 15px; border: 1px solid #ddd; margin-bottom: 2rem; }
+.canvas-wrapper { height: 450px; width: 100%; position: relative; }
+.chart-toolbar { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
+.chart-toolbar button { padding: 7px 12px; cursor: pointer; border: 1px solid #ccc; background: white; border-radius: 4px; font-size: 0.9rem; transition: 0.2s; }
+.chart-toolbar button:hover { background: #f0f0f0; }
+
+/* COLORES CAJAS */
 #box-env { background: var(--bg-env); border-color: #f1c40f; }
 #box-dev1 { background: var(--bg-dev1); border-color: #9b59b6; }
 #box-dev2 { background: var(--bg-dev2); border-color: #e67e22; }
 #box-dev3 { background: var(--bg-dev3); border-color: #00acc1; }
 #box-signal { background: var(--bg-sig); border-color: #2ecc71; }
 
-.env-row { display: flex; justify-content: space-between; font-size: 0.9rem; padding: 2px 0; }
-.data-value-small { display: flex; justify-content: space-between; font-weight: 800; font-size: 1rem; padding: 3px 0; }
+/* RESPONSIVE */
+@media (max-width: 1100px) {
+    .current-data-grid { grid-template-columns: repeat(3, 1fr); }
+    #box-env { grid-column: span 3; }
+}
 
-/* GRÁFICAS */
-.chart-container { background: white; padding: 0.8rem; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 1.5rem; }
-.canvas-wrapper { height: 350px; width: 100%; position: relative; }
-.chart-toolbar { display: flex; gap: 5px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
-.chart-toolbar button { padding: 6px 10px; cursor: pointer; border: 1px solid #ccc; background: white; border-radius: 4px; }
-
-/* AJUSTES MÓVIL EXTREMO */
 @media (max-width: 768px) {
-    .header { height: 70px; }
-    .header-logo { height: 35px; }
-    .header-title { font-size: 0.9rem; }
-    .header-subtitle { display: none; } /* Ocultamos subtítulo en móvil para ganar espacio */
-    .nav { gap: 8px; }
-    .hide-mobile { display: none; } /* Ocultamos "Tiempo Real" y texto de CSV */
+    .header { height: auto; min-height: 65px; }
+    .logos-container { border-right: none; padding-right: 5px; }
+    .header-subtitle { display: none; }
+    .hide-mobile { display: none; }
     
     .current-data-grid { grid-template-columns: repeat(2, 1fr); }
     #box-env { grid-column: span 2; }
-    .canvas-wrapper { height: 280px; }
+    
+    .header-logo { height: 35px; }
+    .header-title { font-size: 0.9rem; }
 }
 
 @media (max-width: 480px) {
-    .header-left { gap: 5px; }
-    .logos-container { gap: 4px; padding-right: 5px; }
-    .header-logo { height: 30px; }
-    .header-title { font-size: 0.8rem; }
+    .current-data-grid { grid-template-columns: 1fr; }
+    #box-env { grid-column: span 1; }
 }
