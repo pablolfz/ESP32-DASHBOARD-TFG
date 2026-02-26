@@ -18,8 +18,8 @@ function initCharts() {
             }
         },
         scales: {
-            x: { type: 'time', time: { unit: 'minute', displayFormats: { minute: 'HH:mm' } } },
-            y: { ticks: { font: { size: 15 } } }
+            x: { type: 'time', time: { unit: 'minute', displayFormats: { minute: 'HH:mm' } }, title: { display: true, text: 'Hora', font: { size: 18, weight: 'bold' } } },
+            y: { title: { display: true, text: 'Temperatura (°C)', font: { size: 18, weight: 'bold' } }, ticks: { font: { size: 15 } } }
         }
     };
 
@@ -74,7 +74,7 @@ async function updateData() {
             chart2.update('none');
             refreshUI(d2[d2.length-1], 'dev2');
         }
-    } catch (e) { console.error("Error cargando datos:", e); }
+    } catch (e) { console.error(e); }
 }
 
 function refreshUI(last, dev) {
@@ -84,14 +84,10 @@ function refreshUI(last, dev) {
         document.getElementById('current-humidity-value').textContent = fmt(last.h_aht) + " %";
         document.getElementById('val-t1').textContent = fmt(last.t1) + " °C";
         document.getElementById('val-t2').textContent = fmt(last.t2) + " °C";
-        document.getElementById('val-t3').textContent = fmt(last.t3) + " °C";
-        document.getElementById('val-t4').textContent = fmt(last.t4) + " °C";
         document.getElementById('current-signal-value').textContent = (last.rssi || "--") + " dBm";
-        document.getElementById('currentTime').textContent = "Última sincronización: " + new Date(last.timestamp).toLocaleTimeString();
+        document.getElementById('currentTime').textContent = "Sincronizado: " + new Date(last.timestamp).toLocaleTimeString();
     } else {
         document.getElementById('dev2-t1').textContent = fmt(last.t1) + " °C";
         document.getElementById('dev2-t2').textContent = fmt(last.t2) + " °C";
-        document.getElementById('dev2-t3').textContent = fmt(last.t3) + " °C";
-        document.getElementById('dev2-t4').textContent = fmt(last.t4) + " °C";
     }
 }
