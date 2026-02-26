@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estación LoRa UGR - Dashboard TFG</title>
+    <title>Estación LoRa UGR - Dashboard</title>
     
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -12,27 +12,20 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 
     <style>
-        /* Ajustes de última hora para asegurar visibilidad */
         html { scroll-behavior: smooth; }
         .canvas-wrapper {
             position: relative;
-            height: 400px; /* Altura fija para que la gráfica no colapse */
+            height: 600px; /* Altura aumentada a petición */
             width: 100%;
             background-color: #ffffff;
             border-radius: 8px;
-        }
-        .divider {
-            border: 0;
-            height: 1px;
-            background: #e1e4e8;
-            margin: 3rem 0;
         }
     </style>
 </head>
 <body>
     <header class="header">
         <div class="logo">
-            <img src="/static/images/logo_ugr1.png" alt="Logo UGR" class="header-logo">
+            <img src="/static/images/logo_ugr1.png" alt="UGR" class="header-logo">
             <div class="logo-text">
                 <span class="header-title">Estación LoRa</span>
                 <span class="header-subtitle">ETS Ing. Caminos, Canales y Puertos</span>
@@ -41,18 +34,16 @@
         <nav class="nav">
             <a href="#">Tiempo Real</a>
             <a href="#seccion-historico">Histórico</a>
-            <a href="#" onclick="location.reload()">Actualizar</a>
             <a href="/api/download_csv" class="btn-csv">
                 <i class="fa-solid fa-file-csv"></i> Descargar CSV
             </a>
+            <a href="#" onclick="location.reload()">Actualizar</a>
         </nav>
     </header>
 
     <div class="container">
-        <section class="top-section">
-            <h1>Mediciones a tiempo real</h1>
-            <p class="last-update" id="currentTime">Esperando sincronización de Firebase...</p>
-        </section>
+        <h1>Mediciones a tiempo real</h1>
+        <p class="last-update" id="currentTime">Sincronizando con Firebase...</p>
 
         <div class="current-data-grid">
             <div class="data-box" id="box-temp-aht">
@@ -66,7 +57,7 @@
             </div>
 
             <div class="data-box" style="border-top: 5px solid #9b59b6; background-color: #f3e5f5;">
-                <h3>Sondas Dispositivo 1 <i class="fa-solid fa-temperature-half icon-box"></i></h3>
+                <h3>Sondas Dev 1 <i class="fa-solid fa-temperature-half icon-box"></i></h3>
                 <div class="data-value-small"><span>S1:</span> <b id="val-t1">--</b> °C</div>
                 <div class="data-value-small"><span>S2:</span> <b id="val-t2">--</b> °C</div>
                 <div class="data-value-small"><span>S3:</span> <b id="val-t3">--</b> °C</div>
@@ -74,7 +65,7 @@
             </div>
 
             <div class="data-box" style="border-top: 5px solid #e67e22; background-color: #fdf2e9;">
-                <h3>Sondas Dispositivo 2 <i class="fa-solid fa-microchip icon-box"></i></h3>
+                <h3>Sondas Dev 2 <i class="fa-solid fa-microchip icon-box"></i></h3>
                 <div class="data-value-small"><span>S1:</span> <b id="dev2-t1">--</b> °C</div>
                 <div class="data-value-small"><span>S2:</span> <b id="dev2-t2">--</b> °C</div>
                 <div class="data-value-small"><span>S3:</span> <b id="dev2-t3">--</b> °C</div>
@@ -82,33 +73,21 @@
             </div>
 
             <div class="data-box" id="box-signal">
-                <h3>Señal LoRa <i class="fa-solid fa-signal icon-box"></i></h3>
+                <h3>Señal <i class="fa-solid fa-signal icon-box"></i></h3>
                 <div class="data-value" id="current-signal-value">-- dBm</div>
             </div>
         </div>
 
-        <hr class="divider">
-
         <div id="seccion-historico" class="charts-grid">
             <div class="chart-container">
-                <h2><i class="fa-solid fa-chart-line"></i> Historial Dispositivo 1 (Ambiente + Sondas)</h2>
-                <div class="canvas-wrapper">
-                    <canvas id="tempChart"></canvas>
-                </div>
+                <h2>Historial Dispositivo 1</h2>
+                <div class="canvas-wrapper"><canvas id="tempChart"></canvas></div>
             </div>
-
             <div class="chart-container">
-                <h2><i class="fa-solid fa-chart-area"></i> Historial Dispositivo 2 (Temperaturas)</h2>
-                <div class="canvas-wrapper">
-                    <canvas id="batteryChart"></canvas>
-                </div>
+                <h2>Historial Dispositivo 2</h2>
+                <div class="canvas-wrapper"><canvas id="batteryChart"></canvas></div>
             </div>
         </div>
-
-        <footer style="text-align: center; margin: 60px 0; color: #7f8c8d; font-size: 0.85rem;">
-            <p>Proyecto TFG - Monitorización IoT vía LoRa & Firebase</p>
-            <p>Universidad de Granada - ETSICCP</p>
-        </footer>
     </div>
 
     <script src="/static/js/dashboard.js"></script>
