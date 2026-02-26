@@ -1,11 +1,10 @@
 from flask import Flask, request, jsonify, render_template
 from datetime import datetime
+import os
 import requests
 
 app = Flask(__name__)
 
-# --- CONFIGURACIÓN FIREBASE ---
-# PEGA AQUÍ TU URL Y AÑADE 'readings.json' AL FINAL
 FIREBASE_URL = "https://tfg2026-511e7-default-rtdb.europe-west1.firebasedatabase.app/readings.json"
 
 def safe_float(value):
@@ -16,8 +15,6 @@ def safe_float(value):
 def receive_data():
     try:
         data = request.get_json()
-        
-        # Estructura de datos para Firebase
         payload = {
             "timestamp": datetime.now().isoformat(),
             "device_id": data.get('id', 'Estacion_Remota'),
@@ -29,11 +26,8 @@ def receive_data():
             "t4": safe_float(data.get('t4')),
             "rssi": safe_float(data.get('rssi'))
         }
-
-        # Guardar en Firebase
         requests.post(FIREBASE_URL, json=payload)
         return jsonify({"status": "success"}), 200
-            
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -42,16 +36,8 @@ def get_history():
     try:
         response = requests.get(FIREBASE_URL)
         fb_data = response.json()
-        
-        history_data = []
-        if fb_data:
-            # Firebase devuelve un diccionario, lo convertimos a lista para el JS
-            for key in fb_data:
-                history_data.append(fb_data[key])
-        
-        # Ordenamos por tiempo para que la gráfica no salga desordenada
-        history_data.sort(key=lambda x: x['timestamp'])
-        return jsonify(history_data[-100:]) # Mandamos los últimos 100 puntos
+        history_data = [fb_data[k] for k in fb_data] if fb_data else []
+        return jsonify(history_data)
     except:
         return jsonify([]), 500
 
@@ -60,6 +46,6 @@ def index():
     return render_template('index.html')
 
 if __name__ == '__main__':
-    # Render usa el puerto 10000 por defecto
-    app.run(host='0.0.0.0', port=10000)
-
+    # Esto es vital para Render
+    port = int(os.environ.get('PORT', 10000))
+    app.run(host='0.0.0.0', port=port)
