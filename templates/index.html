@@ -3,11 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estación LoRa UGR - Dashboard</title>
-    
+    <title>Dashboard LoRa UGR</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
@@ -32,38 +30,28 @@
     </header>
 
     <div class="container">
-        <section class="top-info">
-            <h1>Mediciones a tiempo real</h1>
-            <p class="last-update" id="currentTime">Cargando datos...</p>
-        </section>
+        <h1>Mediciones a tiempo real</h1>
+        <p id="currentTime">Cargando...</p>
 
         <div class="current-data-grid">
             <div class="data-box" id="box-temp-aht">
                 <h3>Ambiente <i class="fa-solid fa-cloud-sun"></i></h3>
                 <div class="data-value" id="current-temp1-value">-- °C</div>
             </div>
-
             <div class="data-box" id="box-humidity">
                 <h3>Humedad <i class="fa-solid fa-droplet"></i></h3>
                 <div class="data-value" id="current-humidity-value">-- %</div>
             </div>
-
             <div class="data-box" id="box-dev1">
                 <h3>Sondas Dev 1 <i class="fa-solid fa-temperature-half"></i></h3>
                 <div class="data-value-small"><span>S1:</span> <b id="val-t1">--</b></div>
                 <div class="data-value-small"><span>S2:</span> <b id="val-t2">--</b></div>
-                <div class="data-value-small"><span>S3:</span> <b id="val-t3">--</b></div>
-                <div class="data-value-small"><span>S4:</span> <b id="val-t4">--</b></div>
             </div>
-
             <div class="data-box" id="box-dev2">
                 <h3>Sondas Dev 2 <i class="fa-solid fa-microchip"></i></h3>
                 <div class="data-value-small"><span>S1:</span> <b id="dev2-t1">--</b></div>
                 <div class="data-value-small"><span>S2:</span> <b id="dev2-t2">--</b></div>
-                <div class="data-value-small"><span>S3:</span> <b id="dev2-t3">--</b></div>
-                <div class="data-value-small"><span>S4:</span> <b id="dev2-t4">--</b></div>
             </div>
-
             <div class="data-box" id="box-signal">
                 <h3>Señal <i class="fa-solid fa-signal"></i></h3>
                 <div class="data-value" id="current-signal-value">-- dBm</div>
@@ -72,29 +60,26 @@
 
         <div id="seccion-historico" class="charts-grid">
             <div class="chart-container">
-                <h2>Historial Dispositivo 1</h2>
+                <h2>Dispositivo 1</h2>
                 <div class="chart-toolbar">
                     <button onclick="chart1.resetZoom()"><i class="fa-solid fa-house"></i> Home</button>
                     <button onclick="chart1.zoom(1.1)"><i class="fa-solid fa-plus"></i></button>
                     <button onclick="chart1.zoom(0.9)"><i class="fa-solid fa-minus"></i></button>
                     <button onclick="moveChart(chart1, -0.1)"><i class="fa-solid fa-arrow-left"></i></button>
                     <button onclick="moveChart(chart1, 0.1)"><i class="fa-solid fa-arrow-right"></i></button>
-                    <span class="date-label">Filtrar día:</span>
-                    <input type="date" onchange="goToDate(chart1, this.value)">
+                    <input type="date" style="margin-left:auto" onchange="goToDate(chart1, this.value)">
                 </div>
                 <div class="canvas-wrapper"><canvas id="tempChart"></canvas></div>
             </div>
-
             <div class="chart-container">
-                <h2>Historial Dispositivo 2</h2>
+                <h2>Dispositivo 2</h2>
                 <div class="chart-toolbar">
                     <button onclick="chart2.resetZoom()"><i class="fa-solid fa-house"></i> Home</button>
                     <button onclick="chart2.zoom(1.1)"><i class="fa-solid fa-plus"></i></button>
                     <button onclick="chart2.zoom(0.9)"><i class="fa-solid fa-minus"></i></button>
                     <button onclick="moveChart(chart2, -0.1)"><i class="fa-solid fa-arrow-left"></i></button>
                     <button onclick="moveChart(chart2, 0.1)"><i class="fa-solid fa-arrow-right"></i></button>
-                    <span class="date-label">Filtrar día:</span>
-                    <input type="date" onchange="goToDate(chart2, this.value)">
+                    <input type="date" style="margin-left:auto" onchange="goToDate(chart2, this.value)">
                 </div>
                 <div class="canvas-wrapper"><canvas id="batteryChart"></canvas></div>
             </div>
