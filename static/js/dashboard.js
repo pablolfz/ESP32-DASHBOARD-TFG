@@ -14,23 +14,12 @@ function initCharts() {
             legend: { position: 'bottom', labels: { font: { size: 16, weight: 'bold' } } },
             zoom: {
                 pan: { enabled: true, mode: 'x' },
-                zoom: { 
-                    wheel: { enabled: false }, // DESACTIVADO RUEDA
-                    pinch: { enabled: false }, // DESACTIVADO PINZA
-                    mode: 'x' 
-                }
+                zoom: { wheel: { enabled: false }, pinch: { enabled: false }, mode: 'x' }
             }
         },
         scales: {
-            x: { 
-                type: 'time', 
-                time: { unit: 'minute', displayFormats: { minute: 'HH:mm' } },
-                title: { display: true, text: 'Hora', font: { size: 18, weight: 'bold' } }
-            },
-            y: { 
-                title: { display: true, text: 'Temperatura (°C)', font: { size: 18, weight: 'bold' } },
-                ticks: { font: { size: 15 } }
-            }
+            x: { type: 'time', time: { unit: 'minute', displayFormats: { minute: 'HH:mm' } } },
+            y: { ticks: { font: { size: 15 } } }
         }
     };
 
@@ -58,23 +47,22 @@ function goToDate(chart, dateStr) {
 async function updateData() {
     try {
         const res = await fetch('/api/history');
-        const dataRaw = await res.json();
-        let data = Array.isArray(dataRaw) ? dataRaw : Object.values(dataRaw);
+        const fbData = await res.json();
+        let data = Array.isArray(fbData) ? fbData : Object.values(fbData);
         if (!data.length) return;
 
         data.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
 
         const d1 = data.filter(i => i.device_id === 'Estacion_Remota' || i.device_id === 'Dispositivo_1');
         const d2 = data.filter(i => i.device_id === 'Dispositivo_2');
-
         const clean = (arr, key) => arr.map(i => (i[key] != null && i[key] > -100) ? i[key] : null);
 
         if (chart1 && d1.length) {
             chart1.data.labels = d1.map(i => new Date(i.timestamp));
             chart1.data.datasets = [
                 { label: 'Ambiente', data: clean(d1, 't_aht'), borderColor: '#f1c40f', borderWidth: 3 },
-                { label: 'Sonda 1', data: clean(d1, 't1'), borderColor: '#e67e22', borderWidth: 3 },
-                { label: 'Sonda 2', data: clean(d1, 't2'), borderColor: '#3498db', borderWidth: 3 }
+                { label: 'S1', data: clean(d1, 't1'), borderColor: '#e67e22', borderWidth: 3 },
+                { label: 'S2', data: clean(d1, 't2'), borderColor: '#3498db', borderWidth: 3 }
             ];
             chart1.update('none');
             refreshUI(d1[d1.length-1], 'dev1');
@@ -86,7 +74,7 @@ async function updateData() {
             chart2.update('none');
             refreshUI(d2[d2.length-1], 'dev2');
         }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("Error cargando datos:", e); }
 }
 
 function refreshUI(last, dev) {
