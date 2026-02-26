@@ -2,150 +2,46 @@
     --color-bg: #f4f7f6;
     --color-primary: #1a252f;
     --color-header: #ffffff;
-    --color-accent: #3498db;
-    --color-success: #27ae60;
-    
-    /* Colores pastel para las cajas */
-    --bg-temp: #fff9db;
-    --bg-hum: #e3f2fd;
-    --bg-dev1: #f3e5f5;
-    --bg-dev2: #fff3e0;
-    --bg-sig: #e8f5e9;
 }
 
-body { 
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-    margin: 0; 
-    background-color: var(--color-bg); 
-    color: var(--color-primary); 
-}
+body { font-family: 'Segoe UI', sans-serif; margin: 0; background-color: var(--color-bg); }
 
-/* ENCABEZADO CORREGIDO */
-.header {
-    background-color: var(--color-header);
-    width: 100%;
-    height: 110px;
-    display: flex;
-    align-items: center;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-}
+.header { background: var(--color-header); height: 110px; display: flex; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: sticky; top:0; z-index:1000; }
+.header-content { width: 95%; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+.logo { display: flex; align-items: center; gap: 15px; }
+.header-logo { height: 70px; width: auto; }
+.logo-text { display: flex; flex-direction: column; }
+.header-title { font-weight: 800; font-size: 1.5rem; }
 
-.header-content {
-    width: 95%;
-    margin: 0 auto;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.logo { 
-    display: flex; 
-    align-items: center; 
-    gap: 15px; 
-}
-
-.header-logo { 
-    height: 75px; 
-    width: auto; 
-}
-
-.logo-text { 
-    display: flex; 
-    flex-direction: column; /* Fuerza el subtítulo debajo del título */
-    justify-content: center;
-}
-
-.header-title { 
-    font-weight: 800; 
-    font-size: 1.6rem; 
-    margin: 0; 
-    line-height: 1.1;
-}
-
-.header-subtitle { 
-    font-size: 0.95rem; 
-    color: #666; 
-    margin: 0; 
-    margin-top: 2px;
-}
-
-/* MENÚ Y BOTÓN CSV */
-.nav { 
-    display: flex; 
-    gap: 25px; 
-    align-items: center; 
-}
-
-.nav a { 
-    text-decoration: none; 
-    color: var(--color-primary); 
-    font-weight: 700; 
-    font-size: 1.1rem; 
-}
-
-.btn-csv { 
-    background-color: var(--color-success) !important; 
-    color: white !important; 
-    padding: 10px 18px !important; 
-    border-radius: 8px; 
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
-}
-
-.btn-csv:hover {
-    background-color: #219150 !important;
-}
-
-/* CUERPO Y RECUADROS */
 .container { max-width: 95%; margin: 2rem auto; }
 
+/* GRID REESTRUCTURADO */
 .current-data-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1.5rem; margin: 2rem 0;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem; margin-bottom: 3rem;
 }
 
-.data-box {
-    padding: 1.8rem; 
-    border-radius: 15px; 
-    border: 1px solid rgba(0,0,0,0.05);
-    transition: transform 0.2s;
-}
+.data-box { padding: 1.5rem; border-radius: 15px; border-top: 6px solid #333; background: white; }
 
-#box-temp-aht { background-color: var(--bg-temp); border-top: 6px solid #f1c40f; }
-#box-humidity { background-color: var(--bg-hum); border-top: 6px solid #3498db; }
-#box-dev1     { background-color: var(--bg-dev1); border-top: 6px solid #9b59b6; }
-#box-dev2     { background-color: var(--bg-dev2); border-top: 6px solid #e67e22; }
-#box-signal   { background-color: var(--bg-sig); border-top: 6px solid #2ecc71; }
+/* Colores por sección */
+#box-env { background-color: #fffde7; border-color: #fbc02d; }
+#box-dev1 { background-color: #f3e5f5; border-color: #9b59b6; }
+#box-dev2 { background-color: #fff3e0; border-color: #e67e22; }
+#box-dev3 { background-color: #e0f7fa; border-color: #00acc1; }
+#box-signal { background-color: #e8f5e9; border-color: #2ecc71; }
 
-.data-value { font-size: 2.8rem; font-weight: 800; margin: 10px 0; }
-.data-value-small { 
-    display: flex; 
-    justify-content: space-between; 
-    font-weight: 700; 
-    border-bottom: 1px solid rgba(0,0,0,0.05); 
-    padding: 4px 0; 
-}
+/* Tabla de Ambiente */
+.env-table { margin-top: 10px; }
+.env-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 1.2rem; }
+.header-row { font-weight: bold; color: #666; font-size: 0.9rem; text-transform: uppercase; }
+.env-row b { width: 30%; text-align: right; }
 
-/* GRÁFICAS */
+.data-value-small { display: flex; justify-content: space-between; font-weight: 700; padding: 5px 0; border-bottom: 1px solid #f0f0f0; }
+
 .charts-grid { display: flex; flex-direction: column; gap: 3rem; }
 .chart-container { background: white; padding: 2rem; border-radius: 20px; border: 1px solid #ddd; }
 .canvas-wrapper { height: 600px; width: 100%; position: relative; }
 
-.chart-toolbar { 
-    display: flex; 
-    align-items: center; 
-    gap: 10px; 
-    margin-bottom: 15px; 
-    padding: 10px; 
-    background: #f9f9f9; 
-    border-radius: 8px; 
-}
-.chart-toolbar button { padding: 8px 15px; cursor: pointer; border: 1px solid #ccc; background: white; border-radius: 5px; }
-.date-label { margin-left: auto; font-weight: bold; }
+.chart-toolbar { display: flex; gap: 10px; margin-bottom: 10px; background: #f9f9f9; padding: 8px; border-radius: 8px; }
+.btn-csv { background: #27ae60; color: white; padding: 10px 15px; border-radius: 6px; text-decoration: none; font-weight: bold; }
