@@ -120,11 +120,11 @@ body {
     transform: translateY(-1px);
 }
 
-/* --- CONTENIDO --- */
+/* --- CONTENIDO PRINCIPAL (Márgenes Estrechos) --- */
 .container {
-    max-width: 1200px;
-    margin: 2rem auto;
-    padding: 0 1.5rem;
+    max-width: 95%;      /* Aumentamos del 1200px/1300px original al 95% */
+    margin: 1.5rem auto; /* Mantenemos el centrado */
+    padding: 0 1rem;     /* Reducimos el padding lateral interno */
 }
 
 h1 {
@@ -251,3 +251,4 @@ h1 {
         height: 320px;
     }
 }
+
