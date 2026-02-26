@@ -1,112 +1,49 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estación LoRa UGR - Dashboard v3</title>
-    <link rel="stylesheet" href="/static/css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
-</head>
-<body>
-    <header class="header">
-        <div class="header-content">
-            <div class="logo">
-                <img src="/static/images/logo_ugr1.png" alt="UGR" class="header-logo">
-                <div class="logo-text">
-                    <span class="header-title">Estación LoRa</span>
-                    <span class="header-subtitle">ETS Ing. Caminos, Canales y Puertos</span>
+<div class="container">
+    <h1>Monitoreo Multidispositivo</h1>
+    <p id="currentTime">Sincronizando con Firebase...</p>
+
+    <div class="current-data-grid">
+        <div class="data-box" id="box-env">
+            <h3>Condiciones (AHT20) <i class="fa-solid fa-cloud-sun"></i></h3>
+            <div class="env-table">
+                <div class="env-row header-row">
+                    <span>ID</span><span>Temp.</span><span>Hum.</span>
                 </div>
-            </div>
-            <nav class="nav">
-                <a href="#">Tiempo Real</a>
-                <a href="#seccion-historico">Histórico</a>
-                <a href="/api/download_csv" class="btn-csv"><i class="fa-solid fa-file-csv"></i> Descargar CSV</a>
-                <a href="#" onclick="location.reload()">Actualizar</a>
-            </nav>
-        </div>
-    </header>
-
-    <div class="container">
-        <h1>Monitoreo Multidispositivo</h1>
-        <p id="currentTime">Sincronizando con Firebase...</p>
-
-        <div class="current-data-grid">
-            <div class="data-box" id="box-env" style="grid-column: span 2;">
-                <h3>Condiciones Ambientales (AHT20) <i class="fa-solid fa-cloud-sun"></i></h3>
-                <div class="env-table">
-                    <div class="env-row header-row">
-                        <span>Dispositivo</span><span>Temperatura</span><span>Humedad</span>
-                    </div>
-                    <div class="env-row"><span>Estación 1</span><b id="d1-t">--</b><b id="d1-h">--</b></div>
-                    <div class="env-row"><span>Estación 2</span><b id="d2-t">--</b><b id="d2-h">--</b></div>
-                    <div class="env-row"><span>Estación 3</span><b id="d3-t">--</b><b id="d3-h">--</b></div>
-                </div>
-            </div>
-
-            <div class="data-box" id="box-dev1">
-                <h3>Sondas Estación 1 <i class="fa-solid fa-temperature-half"></i></h3>
-                <div class="data-value-small"><span>S1:</span> <b id="d1-s1">--</b></div>
-                <div class="data-value-small"><span>S2:</span> <b id="d1-s2">--</b></div>
-                <div class="data-value-small"><span>S3:</span> <b id="d1-s3">--</b></div>
-                <div class="data-value-small"><span>S4:</span> <b id="d1-s4">--</b></div>
-            </div>
-
-            <div class="data-box" id="box-dev2">
-                <h3>Sondas Estación 2 <i class="fa-solid fa-temperature-half"></i></h3>
-                <div class="data-value-small"><span>S1:</span> <b id="d2-s1">--</b></div>
-                <div class="data-value-small"><span>S2:</span> <b id="d2-s2">--</b></div>
-                <div class="data-value-small"><span>S3:</span> <b id="d2-s3">--</b></div>
-                <div class="data-value-small"><span>S4:</span> <b id="d2-s4">--</b></div>
-            </div>
-
-            <div class="data-box" id="box-dev3">
-                <h3>Sondas Estación 3 <i class="fa-solid fa-temperature-half"></i></h3>
-                <div class="data-value-small"><span>S1:</span> <b id="d3-s1">--</b></div>
-                <div class="data-value-small"><span>S2:</span> <b id="d3-s2">--</b></div>
-                <div class="data-value-small"><span>S3:</span> <b id="d3-s3">--</b></div>
-                <div class="data-value-small"><span>S4:</span> <b id="d3-s4">--</b></div>
-            </div>
-
-            <div class="data-box" id="box-signal">
-                <h3>Señal (RSSI) <i class="fa-solid fa-signal"></i></h3>
-                <div class="data-value-small"><span>Est. 1:</span> <b id="d1-rssi">--</b></div>
-                <div class="data-value-small"><span>Est. 2:</span> <b id="d2-rssi">--</b></div>
-                <div class="data-value-small"><span>Est. 3:</span> <b id="d3-rssi">--</b></div>
+                <div class="env-row"><span>E1</span><b id="d1-t">--</b><b id="d1-h">--</b></div>
+                <div class="env-row"><span>E2</span><b id="d2-t">--</b><b id="d2-h">--</b></div>
+                <div class="env-row"><span>E3</span><b id="d3-t">--</b><b id="d3-h">--</b></div>
             </div>
         </div>
 
-        <div id="seccion-historico" class="charts-grid">
-            <div class="chart-container">
-                <h2>Historial Estación 1</h2>
-                <div class="chart-toolbar">
-                    <button onclick="chart1.resetZoom()"><i class="fa-solid fa-house"></i></button>
-                    <button onclick="chart1.zoom(1.1)"><i class="fa-solid fa-plus"></i></button>
-                    <button onclick="chart1.zoom(0.9)"><i class="fa-solid fa-minus"></i></button>
-                    <input type="date" onchange="goToDate(chart1, this.value)">
-                </div>
-                <div class="canvas-wrapper"><canvas id="chart1"></canvas></div>
-            </div>
-            <div class="chart-container">
-                <h2>Historial Estación 2</h2>
-                <div class="chart-toolbar">
-                    <button onclick="chart2.resetZoom()"><i class="fa-solid fa-house"></i></button>
-                    <input type="date" onchange="goToDate(chart2, this.value)">
-                </div>
-                <div class="canvas-wrapper"><canvas id="chart2"></canvas></div>
-            </div>
-            <div class="chart-container">
-                <h2>Historial Estación 3</h2>
-                <div class="chart-toolbar">
-                    <button onclick="chart3.resetZoom()"><i class="fa-solid fa-house"></i></button>
-                    <input type="date" onchange="goToDate(chart3, this.value)">
-                </div>
-                <div class="canvas-wrapper"><canvas id="chart3"></canvas></div>
-            </div>
+        <div class="data-box" id="box-dev1">
+            <h3>Sondas E1 <i class="fa-solid fa-temperature-half"></i></h3>
+            <div class="data-value-small"><span>S1:</span> <b id="d1-s1">--</b></div>
+            <div class="data-value-small"><span>S2:</span> <b id="d1-s2">--</b></div>
+            <div class="data-value-small"><span>S3:</span> <b id="d1-s3">--</b></div>
+            <div class="data-value-small"><span>S4:</span> <b id="d1-s4">--</b></div>
+        </div>
+
+        <div class="data-box" id="box-dev2">
+            <h3>Sondas E2 <i class="fa-solid fa-temperature-half"></i></h3>
+            <div class="data-value-small"><span>S1:</span> <b id="d2-s1">--</b></div>
+            <div class="data-value-small"><span>S2:</span> <b id="d2-s2">--</b></div>
+            <div class="data-value-small"><span>S3:</span> <b id="d2-s3">--</b></div>
+            <div class="data-value-small"><span>S4:</span> <b id="d2-s4">--</b></div>
+        </div>
+
+        <div class="data-box" id="box-dev3">
+            <h3>Sondas E3 <i class="fa-solid fa-temperature-half"></i></h3>
+            <div class="data-value-small"><span>S1:</span> <b id="d3-s1">--</b></div>
+            <div class="data-value-small"><span>S2:</span> <b id="d3-s2">--</b></div>
+            <div class="data-value-small"><span>S3:</span> <b id="d3-s3">--</b></div>
+            <div class="data-value-small"><span>S4:</span> <b id="d3-s4">--</b></div>
+        </div>
+
+        <div class="data-box" id="box-signal">
+            <h3>Señal (RSSI) <i class="fa-solid fa-signal"></i></h3>
+            <div class="data-value-small"><span>E1:</span> <b id="d1-rssi">--</b></div>
+            <div class="data-value-small"><span>E2:</span> <b id="d2-rssi">--</b></div>
+            <div class="data-value-small"><span>E3:</span> <b id="d3-rssi">--</b></div>
         </div>
     </div>
-    <script src="/static/js/dashboard.js"></script>
-</body>
-</html>
+    </div>
