@@ -1,94 +1,72 @@
-let chartDev1, chartDev2;
+let chart1, chart2;
 
 document.addEventListener('DOMContentLoaded', () => {
     initCharts();
-    fetchAndDrawHistoricalData();
-    // Refresco automático cada 30 segundos
-    setInterval(fetchAndDrawHistoricalData, 30000);
+    fetchData();
+    setInterval(fetchData, 30000); // 30 segundos
 });
 
 function initCharts() {
-    const commonOptions = {
+    const options = {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom' } },
         scales: {
             x: { type: 'time', time: { unit: 'minute', displayFormats: { minute: 'HH:mm' } } },
             y: { title: { display: true, text: 'Temp (°C)' } }
         }
     };
 
-    const ctx1 = document.getElementById('tempChart')?.getContext('2d');
-    if (ctx1) {
-        chartDev1 = new Chart(ctx1, {
-            type: 'line',
-            data: { datasets: [] },
-            options: commonOptions
-        });
-    }
-
-    const ctx2 = document.getElementById('batteryChart')?.getContext('2d');
-    if (ctx2) {
-        chartDev2 = new Chart(ctx2, {
-            type: 'line',
-            data: { datasets: [] },
-            options: commonOptions
-        });
-    }
+    chart1 = new Chart(document.getElementById('chart1'), {
+        type: 'line', data: { datasets: [] }, options: options
+    });
+    chart2 = new Chart(document.getElementById('chart2'), {
+        type: 'line', data: { datasets: [] }, options: options
+    });
 }
 
-async function fetchAndDrawHistoricalData() {
+async function fetchData() {
     try {
-        const response = await fetch('/api/history');
-        const rawData = await response.json();
-        
-        let data = Array.isArray(rawData) ? rawData : Object.values(rawData);
-        if (!data || data.length === 0) return;
-        
-        data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        const res = await fetch('/api/history');
+        const raw = await res.json();
+        let data = Array.isArray(raw) ? raw : Object.values(raw);
+        if (!data.length) return;
 
-        // Filtrado por Dispositivo
-        const dataDev1 = data.filter(item => item.device_id === 'Estacion_Remota' || item.device_id === 'Dispositivo_1');
-        const dataDev2 = data.filter(item => item.device_id === 'Dispositivo_2');
+        data.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-        const clean = (arr, key) => arr.map(item => {
-            const val = parseFloat(item[key]);
-            return (!isNaN(val) && val > -120) ? val : null;
-        });
+        const d1 = data.filter(i => i.device_id === 'Estacion_Remota' || i.device_id === 'Dispositivo_1');
+        const d2 = data.filter(i => i.device_id === 'Dispositivo_2');
 
-        // Gráfica 1
-        if (chartDev1 && dataDev1.length > 0) {
-            chartDev1.data.labels = dataDev1.map(item => new Date(item.timestamp));
-            chartDev1.data.datasets = [
-                { label: 'Ambiente', data: clean(dataDev1, 't_aht'), borderColor: '#ff6384', tension: 0.3 },
-                { label: 'S1', data: clean(dataDev1, 't1'), borderColor: '#ff9f40' },
-                { label: 'S2', data: clean(dataDev1, 't2'), borderColor: '#4bc0c0' },
-                { label: 'S3', data: clean(dataDev1, 't3'), borderColor: '#9966ff' },
-                { label: 'S4', data: clean(dataDev1, 't4'), borderColor: '#c9cbcf' }
+        const clean = (arr, key) => arr.map(i => (i[key] > -120) ? i[key] : null);
+
+        if (d1.length) {
+            chart1.data.labels = d1.map(i => new Date(i.timestamp));
+            chart1.data.datasets = [
+                { label: 'Amb', data: clean(d1, 't_aht'), borderColor: '#ff6384' },
+                { label: 'S1', data: clean(d1, 't1'), borderColor: '#ff9f40' },
+                { label: 'S2', data: clean(d1, 't2'), borderColor: '#4bc0c0' },
+                { label: 'S3', data: clean(d1, 't3'), borderColor: '#9966ff' },
+                { label: 'S4', data: clean(d1, 't4'), borderColor: '#c9cbcf' }
             ];
-            chartDev1.update('none');
-            updateUI(dataDev1[dataDev1.length - 1], 'dev1');
+            chart1.update('none');
+            updateUI(d1[d1.length-1], 'dev1');
         }
 
-        // Gráfica 2
-        if (chartDev2 && dataDev2.length > 0) {
-            chartDev2.data.labels = dataDev2.map(item => new Date(item.timestamp));
-            chartDev2.data.datasets = [
-                { label: 'S1 (D2)', data: clean(dataDev2, 't1'), borderColor: '#2ecc71' },
-                { label: 'S2 (D2)', data: clean(dataDev2, 't2'), borderColor: '#27ae60' },
-                { label: 'S3 (D2)', data: clean(dataDev2, 't3'), borderColor: '#e67e22' },
-                { label: 'S4 (D2)', data: clean(dataDev2, 't4'), borderColor: '#d35400' }
+        if (d2.length) {
+            chart2.data.labels = d2.map(i => new Date(i.timestamp));
+            chart2.data.datasets = [
+                { label: 'S1', data: clean(d2, 't1'), borderColor: '#2ecc71' },
+                { label: 'S2', data: clean(d2, 't2'), borderColor: '#27ae60' },
+                { label: 'S3', data: clean(d2, 't3'), borderColor: '#e67e22' },
+                { label: 'S4', data: clean(d2, 't4'), borderColor: '#d35400' }
             ];
-            chartDev2.update('none');
-            updateUI(dataDev2[dataDev2.length - 1], 'dev2');
+            chart2.update('none');
+            updateUI(d2[d2.length-1], 'dev2');
         }
-
-    } catch (e) { console.error("Error JS:", e); }
+    } catch (e) { console.error(e); }
 }
 
 function updateUI(last, dev) {
-    const fmt = (val) => (val != null && val > -120) ? parseFloat(val).toFixed(1) : "--";
-    
+    const fmt = (v) => (v != null && v > -120) ? v.toFixed(1) : "--";
     if (dev === 'dev1') {
         document.getElementById('current-temp1-value').textContent = `${fmt(last.t_aht)} °C`;
         document.getElementById('current-humidity-value').textContent = `${fmt(last.h_aht)} %`;
