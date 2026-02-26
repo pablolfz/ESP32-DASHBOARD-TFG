@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estación LoRa UGR - Dashboard</title>
+    <title>Estación LoRa UGR - Dashboard Móvil</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -24,19 +24,18 @@
                 </div>
             </div>
             <nav class="nav">
-                <a href="#">Tiempo Real</a>
-                <a href="#seccion-historico">Histórico</a>
+                <a href="#seccion-historico" class="nav-link">Historial</a>
                 <a href="/api/download_csv" class="btn-csv">
-                    <i class="fa-solid fa-file-csv"></i> Descargar CSV
+                    <i class="fa-solid fa-file-csv"></i> <span class="btn-text">Descargar</span>
                 </a>
-                <a href="#" onclick="location.reload()">Actualizar</a>
+                <a href="#" onclick="location.reload()" class="nav-link"><i class="fa-solid fa-sync"></i></a>
             </nav>
         </div>
     </header>
 
     <div class="container">
-        <h1>Monitoreo Multidispositivo</h1>
-        <p class="last-update" id="currentTime">Sincronizando con Firebase...</p>
+        <h1 class="main-title">Estado del Sistema</h1>
+        <p class="last-update" id="currentTime">Sincronizando...</p>
 
         <div class="current-data-grid">
             <div class="data-box" id="box-env">
@@ -86,36 +85,22 @@
                 <h2>Historial Estación 1</h2>
                 <div class="chart-toolbar">
                     <button onclick="chart1.resetZoom()"><i class="fa-solid fa-house"></i></button>
-                    <button onclick="chart1.zoom(1.1)"><i class="fa-solid fa-plus"></i></button>
-                    <button onclick="chart1.zoom(0.9)"><i class="fa-solid fa-minus"></i></button>
-                    <button onclick="moveChart(chart1, -0.1)"><i class="fa-solid fa-arrow-left"></i></button>
-                    <button onclick="moveChart(chart1, 0.1)"><i class="fa-solid fa-arrow-right"></i></button>
                     <input type="date" onchange="goToDate(chart1, this.value)">
                 </div>
                 <div class="canvas-wrapper"><canvas id="chart1"></canvas></div>
             </div>
-
             <div class="chart-container">
                 <h2>Historial Estación 2</h2>
                 <div class="chart-toolbar">
                     <button onclick="chart2.resetZoom()"><i class="fa-solid fa-house"></i></button>
-                    <button onclick="chart2.zoom(1.1)"><i class="fa-solid fa-plus"></i></button>
-                    <button onclick="chart2.zoom(0.9)"><i class="fa-solid fa-minus"></i></button>
-                    <button onclick="moveChart(chart2, -0.1)"><i class="fa-solid fa-arrow-left"></i></button>
-                    <button onclick="moveChart(chart2, 0.1)"><i class="fa-solid fa-arrow-right"></i></button>
                     <input type="date" onchange="goToDate(chart2, this.value)">
                 </div>
                 <div class="canvas-wrapper"><canvas id="chart2"></canvas></div>
             </div>
-
             <div class="chart-container">
                 <h2>Historial Estación 3</h2>
                 <div class="chart-toolbar">
                     <button onclick="chart3.resetZoom()"><i class="fa-solid fa-house"></i></button>
-                    <button onclick="chart3.zoom(1.1)"><i class="fa-solid fa-plus"></i></button>
-                    <button onclick="chart3.zoom(0.9)"><i class="fa-solid fa-minus"></i></button>
-                    <button onclick="moveChart(chart3, -0.1)"><i class="fa-solid fa-arrow-left"></i></button>
-                    <button onclick="moveChart(chart3, 0.1)"><i class="fa-solid fa-arrow-right"></i></button>
                     <input type="date" onchange="goToDate(chart3, this.value)">
                 </div>
                 <div class="canvas-wrapper"><canvas id="chart3"></canvas></div>
