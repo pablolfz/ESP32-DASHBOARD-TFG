@@ -10,39 +10,48 @@
 
 body { font-family: 'Segoe UI', sans-serif; margin: 0; background-color: var(--color-bg); }
 
-/* HEADER BALANCEADO */
+/* HEADER SIMPLIFICADO */
 .header { background: white; min-height: 85px; display: flex; align-items: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
 .header-content { width: 96%; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+
 .header-left { display: flex; align-items: center; gap: 12px; }
 .logos-container { display: flex; align-items: center; gap: 10px; border-right: 1.5px solid #ddd; padding-right: 12px; }
 .header-logo { height: clamp(40px, 4vw, 65px); width: auto; }
-.header-title { font-weight: 800; font-size: clamp(1rem, 2vw, 1.4rem); margin: 0; }
-.nav { display: flex; gap: 15px; align-items: center; }
-.nav a { text-decoration: none; color: var(--color-primary); font-weight: 700; font-size: 1rem; }
-.btn-csv { background: #27ae60 !important; color: white !important; padding: 8px 14px; border-radius: 6px; font-weight: bold; text-decoration: none; }
 
-/* RECUADROS */
+.logo-text { display: flex; flex-direction: column; }
+.header-title { font-weight: 800; font-size: clamp(1.1rem, 2.5vw, 1.6rem); margin: 0; line-height: 1; }
+
+.nav { display: flex; gap: 15px; align-items: center; }
+.nav a { text-decoration: none; color: var(--color-primary); font-weight: 700; font-size: 0.95rem; }
+.btn-csv { background: #27ae60 !important; color: white !important; padding: 8px 14px; border-radius: 6px; font-weight: bold; display: flex; align-items: center; gap: 6px; }
+
+/* RECUADROS Y GRÁFICAS MANTIENEN SU DISEÑO ANTERIOR */
 .container { max-width: 98%; margin: 1rem auto; padding: 0 10px; }
 .current-data-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.8rem; margin-bottom: 2rem; }
 .data-box { padding: 1.2rem 1rem; border-radius: 12px; border-top: 5px solid #333; background: white; box-shadow: 0 3px 6px rgba(0,0,0,0.04); }
-.data-box h3 { font-size: 0.95rem; margin-top: 0; text-transform: uppercase; color: #444; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 10px; }
+.data-box h3 { font-size: 0.9rem; margin-top: 0; text-transform: uppercase; color: #444; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 10px; }
 
 .env-row { display: flex; justify-content: space-between; font-size: 1.1rem; padding: 4px 0; }
 .data-value-small { display: flex; justify-content: space-between; font-weight: 800; font-size: 1.2rem; padding: 6px 0; border-bottom: 1px solid #f5f5f5; }
 
-/* GRÁFICAS */
 .chart-container { background: white; padding: 1.5rem; border-radius: 15px; border: 1px solid #ddd; margin-bottom: 2rem; }
-.canvas-wrapper { height: 500px; width: 100%; position: relative; }
-.chart-toolbar { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; flex-wrap: wrap; }
-.chart-toolbar button { padding: 8px 14px; cursor: pointer; border: 1px solid #ccc; background: white; border-radius: 5px; font-size: 1rem; }
+.canvas-wrapper { height: 480px; width: 100%; position: relative; }
+.chart-toolbar { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
+.chart-toolbar button { padding: 7px 12px; cursor: pointer; border: 1px solid #ccc; background: white; border-radius: 4px; font-size: 0.9rem; }
 
-/* RESPONSIVE */
+#box-env { background: var(--bg-env); border-color: #f1c40f; }
+#box-dev1 { background: var(--bg-dev1); border-color: #9b59b6; }
+#box-dev2 { background: var(--bg-dev2); border-color: #e67e22; }
+#box-dev3 { background: var(--bg-dev3); border-color: #00acc1; }
+#box-signal { background: var(--bg-sig); border-color: #2ecc71; }
+
 @media (max-width: 1100px) {
     .current-data-grid { grid-template-columns: repeat(3, 1fr); }
     #box-env { grid-column: span 3; }
 }
 @media (max-width: 768px) {
-    .header-subtitle, .hide-mobile { display: none; }
+    .hide-mobile { display: none; }
     .current-data-grid { grid-template-columns: repeat(2, 1fr); }
     #box-env { grid-column: span 2; }
+    .header-logo { height: 40px; }
 }
