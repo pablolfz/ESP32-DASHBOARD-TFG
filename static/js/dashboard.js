@@ -3,70 +3,39 @@ let chart1, chart2, chart3;
 document.addEventListener('DOMContentLoaded', () => {
     initCharts();
     updateData();
-    setInterval(updateData, 30000); // Refresco automático cada 30 seg
+    setInterval(updateData, 30000);
 });
 
 function initCharts() {
-    const getOptions = (titleY) => ({
+    const getOptions = () => ({
         responsive: true, 
         maintainAspectRatio: false,
         scales: {
             x: { 
                 type: 'time', 
-                time: { 
-                    unit: 'hour', 
-                    displayFormats: { minute: 'HH:mm', hour: 'HH:mm' } 
-                },
+                time: { unit: 'hour', displayFormats: { minute: 'HH:mm', hour: 'HH:mm' } },
                 ticks: { 
                     autoSkip: true, 
                     minRotation: 45, 
                     maxRotation: 45, 
                     font: { size: 13, weight: '500' } 
                 },
-                title: { 
-                    display: true, 
-                    text: 'Hora de lectura (Formato 24h)', 
-                    font: { weight: 'bold', size: 14 } 
-                }
+                title: { display: true, text: 'Hora (Formato 24h)', font: { weight: 'bold', size: 14 } }
             },
             y: { 
-                type: 'linear', 
-                position: 'left', 
-                title: { 
-                    display: true, 
-                    text: 'Temperatura (°C)', 
-                    font: { weight: 'bold', size: 15 }, 
-                    color: '#c0392b' 
-                },
+                type: 'linear', position: 'left', 
+                title: { display: true, text: 'Temperatura (°C)', font: { weight: 'bold', size: 15 }, color: '#c0392b' },
                 ticks: { font: { size: 13, weight: 'bold' } }
             },
             y1: { 
-                type: 'linear', 
-                position: 'right', 
-                min: 0, max: 100, 
-                grid: { drawOnChartArea: false }, 
-                title: { 
-                    display: true, 
-                    text: 'Humedad (%)', 
-                    font: { weight: 'bold', size: 15 }, 
-                    color: '#2980b9' 
-                },
+                type: 'linear', position: 'right', min: 0, max: 100, grid: { drawOnChartArea: false }, 
+                title: { display: true, text: 'Humedad (%)', font: { weight: 'bold', size: 15 }, color: '#2980b9' },
                 ticks: { font: { size: 13, weight: 'bold' } }
             }
         },
         plugins: { 
-            legend: { 
-                position: 'bottom',
-                labels: { 
-                    boxWidth: 20, 
-                    padding: 20,
-                    font: { size: 16, weight: 'bold' } 
-                } 
-            },
-            zoom: { 
-                pan: { enabled: true, mode: 'x' }, 
-                zoom: { wheel: { enabled: false }, mode: 'x' } 
-            } 
+            legend: { position: 'bottom', labels: { boxWidth: 20, padding: 20, font: { size: 16, weight: 'bold' } } },
+            zoom: { pan: { enabled: true, mode: 'x' }, zoom: { wheel: { enabled: false }, mode: 'x' } } 
         }
     });
 
@@ -105,8 +74,6 @@ async function updateData() {
                     { label: 'S4', data: clean('t4'), borderColor: '#34495e', yAxisID: 'y', borderWidth: 3 }
                 ];
 
-                // AJUSTE DINÁMICO A ÚLTIMAS 24H (Solo si el usuario no ha movido la gráfica)
-                // Si prefieres que siempre fuerce las 24h al actualizar, quita cualquier condición.
                 charts[index].options.scales.x.min = past24h;
                 charts[index].options.scales.x.max = now;
 
@@ -130,7 +97,7 @@ function updateUI(l, id) {
         const rssiEl = document.getElementById(`d${id}-rssi`);
         if(rssiEl) rssiEl.textContent = (l.rssi || "--") + " dBm";
     }
-    if(id === 1) document.getElementById('currentTime').textContent = "Sincronizado: " + new Date(l.timestamp).toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit', hour12:false});
+    if(id === 1) document.getElementById('currentTime').textContent = "Último dato: " + new Date(l.timestamp).toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit', hour12:false});
 }
 
 function moveChart(chart, pct) {
