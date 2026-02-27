@@ -10,7 +10,7 @@
 
 body { font-family: 'Segoe UI', sans-serif; margin: 0; background-color: var(--color-bg); }
 
-/* HEADER */
+/* HEADER BALANCEADO */
 .header { background: white; min-height: 85px; display: flex; align-items: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
 .header-content { width: 96%; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
 .header-left { display: flex; align-items: center; gap: 12px; }
@@ -29,20 +29,12 @@ body { font-family: 'Segoe UI', sans-serif; margin: 0; background-color: var(--c
 
 .env-row { display: flex; justify-content: space-between; font-size: 1.1rem; padding: 4px 0; }
 .data-value-small { display: flex; justify-content: space-between; font-weight: 800; font-size: 1.2rem; padding: 6px 0; border-bottom: 1px solid #f5f5f5; }
-.data-value-small span { font-weight: 400; color: #666; font-size: 0.95rem; }
 
 /* GRÁFICAS */
 .chart-container { background: white; padding: 1.5rem; border-radius: 15px; border: 1px solid #ddd; margin-bottom: 2rem; }
 .canvas-wrapper { height: 500px; width: 100%; position: relative; }
 .chart-toolbar { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; flex-wrap: wrap; }
 .chart-toolbar button { padding: 8px 14px; cursor: pointer; border: 1px solid #ccc; background: white; border-radius: 5px; font-size: 1rem; }
-
-/* COLORES CAJAS */
-#box-env { background: var(--bg-env); border-color: #f1c40f; }
-#box-dev1 { background: var(--bg-dev1); border-color: #9b59b6; }
-#box-dev2 { background: var(--bg-dev2); border-color: #e67e22; }
-#box-dev3 { background: var(--bg-dev3); border-color: #00acc1; }
-#box-signal { background: var(--bg-sig); border-color: #2ecc71; }
 
 /* RESPONSIVE */
 @media (max-width: 1100px) {
