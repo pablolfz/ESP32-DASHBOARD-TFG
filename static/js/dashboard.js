@@ -3,26 +3,29 @@ let chart1, chart2, chart3;
 document.addEventListener('DOMContentLoaded', () => {
     initCharts();
     updateData();
-    setInterval(updateData, 30000);
+    setInterval(updateData, 30000); // Refresco automático cada 30 seg
 });
 
 function initCharts() {
-    const getOptions = () => ({
+    const getOptions = (titleY) => ({
         responsive: true, 
         maintainAspectRatio: false,
         scales: {
             x: { 
                 type: 'time', 
-                time: { unit: 'minute', displayFormats: { minute: 'HH:mm', hour: 'HH:mm' } },
+                time: { 
+                    unit: 'hour', 
+                    displayFormats: { minute: 'HH:mm', hour: 'HH:mm' } 
+                },
                 ticks: { 
                     autoSkip: true, 
-                    minRotation: 45, // Etiquetas tumbadas
-                    maxRotation: 45, // Etiquetas tumbadas
-                    font: { size: 13, weight: '500' } // Fuente más grande
+                    minRotation: 45, 
+                    maxRotation: 45, 
+                    font: { size: 13, weight: '500' } 
                 },
                 title: { 
                     display: true, 
-                    text: 'Hora de lectura (24h)', 
+                    text: 'Hora de lectura (Formato 24h)', 
                     font: { weight: 'bold', size: 14 } 
                 }
             },
@@ -55,9 +58,9 @@ function initCharts() {
             legend: { 
                 position: 'bottom',
                 labels: { 
-                    boxWidth: 20, // Cuadrado de color más grande
+                    boxWidth: 20, 
                     padding: 20,
-                    font: { size: 16, weight: 'bold' } // LEYENDA MUCHO MÁS GRANDE
+                    font: { size: 16, weight: 'bold' } 
                 } 
             },
             zoom: { 
@@ -80,6 +83,9 @@ async function updateData() {
         if (!data.length) return;
         data.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
 
+        const now = new Date();
+        const past24h = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+
         const deviceIds = [['Estacion_1', 'Estacion_Remota'], ['Estacion_2'], ['Estacion_3']];
         const charts = [chart1, chart2, chart3];
 
@@ -98,6 +104,12 @@ async function updateData() {
                     { label: 'S3', data: clean('t3'), borderColor: '#9b59b6', yAxisID: 'y', borderWidth: 3 },
                     { label: 'S4', data: clean('t4'), borderColor: '#34495e', yAxisID: 'y', borderWidth: 3 }
                 ];
+
+                // AJUSTE DINÁMICO A ÚLTIMAS 24H (Solo si el usuario no ha movido la gráfica)
+                // Si prefieres que siempre fuerce las 24h al actualizar, quita cualquier condición.
+                charts[index].options.scales.x.min = past24h;
+                charts[index].options.scales.x.max = now;
+
                 charts[index].update('none');
                 updateUI(last, index + 1);
             }
