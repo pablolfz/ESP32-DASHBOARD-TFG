@@ -29,19 +29,83 @@
     </header>
 
     <div class="container">
-        <h1 class="main-title">Estado del Sistema</h1>
-        <p class="last-update" id="currentTime">Sincronizando...</p>
+        <h1 class="main-title">Estado del Sistema (Tiempo Real)</h1>
+        <p class="last-update" id="currentTime">Sincronizando con Firebase...</p>
+
         <div class="current-data-grid">
+            <div class="data-box" id="box-env">
+                <h3>Ambiente (AHT20) <i class="fa-solid fa-cloud-sun"></i></h3>
+                <div class="env-table">
+                    <div class="env-row header-row"><span>ID</span><span>Temp.</span><span>Hum.</span></div>
+                    <div class="env-row"><span>E1</span><b id="d1-t">--</b><b id="d1-h">--</b></div>
+                    <div class="env-row"><span>E2</span><b id="d2-t">--</b><b id="d2-h">--</b></div>
+                    <div class="env-row"><span>E3</span><b id="d3-t">--</b><b id="d3-h">--</b></div>
+                </div>
             </div>
+
+            <div class="data-box" id="box-dev1">
+                <h3>Sondas E1 <i class="fa-solid fa-temperature-half"></i></h3>
+                <div class="data-value-small"><span>S1:</span> <b id="d1-s1">--</b></div>
+                <div class="data-value-small"><span>S2:</span> <b id="d1-s2">--</b></div>
+                <div class="data-value-small"><span>S3:</span> <b id="d1-s3">--</b></div>
+                <div class="data-value-small"><span>S4:</span> <b id="d1-s4">--</b></div>
+            </div>
+
+            <div class="data-box" id="box-dev2">
+                <h3>Sondas E2 <i class="fa-solid fa-temperature-half"></i></h3>
+                <div class="data-value-small"><span>S1:</span> <b id="d2-s1">--</b></div>
+                <div class="data-value-small"><span>S2:</span> <b id="d2-s2">--</b></div>
+                <div class="data-value-small"><span>S3:</span> <b id="d2-s3">--</b></div>
+                <div class="data-value-small"><span>S4:</span> <b id="d2-s4">--</b></div>
+            </div>
+
+            <div class="data-box" id="box-dev3">
+                <h3>Sondas E3 <i class="fa-solid fa-temperature-half"></i></h3>
+                <div class="data-value-small"><span>S1:</span> <b id="d3-s1">--</b></div>
+                <div class="data-value-small"><span>S2:</span> <b id="d3-s2">--</b></div>
+                <div class="data-value-small"><span>S3:</span> <b id="d3-s3">--</b></div>
+                <div class="data-value-small"><span>S4:</span> <b id="d3-s4">--</b></div>
+            </div>
+
+            <div class="data-box" id="box-signal">
+                <h3>Señal (RSSI) <i class="fa-solid fa-signal"></i></h3>
+                <div class="data-value-small"><span>E1:</span> <b id="d1-rssi">--</b></div>
+                <div class="data-value-small"><span>E2:</span> <b id="d2-rssi">--</b></div>
+                <div class="data-value-small"><span>E3:</span> <b id="d3-rssi">--</b></div>
+            </div>
+        </div>
 
         <div class="charts-grid">
             <div class="chart-container">
                 <h2>Historial Estación 1</h2>
+                <div class="chart-toolbar">
+                    <button onclick="chart1.resetZoom(); resetUserLimit('chart1');"><i class="fa-solid fa-house"></i></button>
+                    <button onclick="moveChart(chart1, -0.2)"><i class="fa-solid fa-arrow-left"></i></button>
+                    <button onclick="moveChart(chart1, 0.2)"><i class="fa-solid fa-arrow-right"></i></button>
+                </div>
                 <div class="canvas-wrapper"><canvas id="chart1"></canvas></div>
             </div>
+
+            <div class="chart-container">
+                <h2>Historial Estación 2</h2>
+                <div class="chart-toolbar">
+                    <button onclick="chart2.resetZoom(); resetUserLimit('chart2');"><i class="fa-solid fa-house"></i></button>
+                    <button onclick="moveChart(chart2, -0.2)"><i class="fa-solid fa-arrow-left"></i></button>
+                    <button onclick="moveChart(chart2, 0.2)"><i class="fa-solid fa-arrow-right"></i></button>
+                </div>
+                <div class="canvas-wrapper"><canvas id="chart2"></canvas></div>
             </div>
 
-        <hr>
+            <div class="chart-container">
+                <h2>Historial Estación 3</h2>
+                <div class="chart-toolbar">
+                    <button onclick="chart3.resetZoom(); resetUserLimit('chart3');"><i class="fa-solid fa-house"></i></button>
+                    <button onclick="moveChart(chart3, -0.2)"><i class="fa-solid fa-arrow-left"></i></button>
+                    <button onclick="moveChart(chart3, 0.2)"><i class="fa-solid fa-arrow-right"></i></button>
+                </div>
+                <div class="canvas-wrapper"><canvas id="chart3"></canvas></div>
+            </div>
+        </div>
 
         <div id="seccion-vibraciones" style="margin-top: 50px;">
             <h1 class="main-title">Análisis de Vibraciones (Piezoeléctrico)</h1>
@@ -49,21 +113,37 @@
                 <div class="chart-toolbar">
                     <button onclick="chartVibraciones.resetZoom()"><i class="fa-solid fa-house"></i></button>
                     <button onclick="descargarCSVVibraciones()" class="btn-csv" style="background:#e74c3c!important">
-                        <i class="fa-solid fa-file-arrow-down"></i> Descargar Captura Actual
+                        <i class="fa-solid fa-file-arrow-down"></i> Descargar CSV Captura
                     </button>
-                    <span style="margin-left:15px; font-weight:bold">5.000 Hz | 5 Segundos (25k muestras)</span>
+                    <span style="margin-left:15px; font-weight:bold; color:#7f8c8d">5.000 Hz | 5 Segundos (25.000 puntos)</span>
                 </div>
-                <div class="canvas-wrapper" style="height: 450px;"><canvas id="chartVibraciones"></canvas></div>
+                <div class="canvas-wrapper" style="height: 500px;"><canvas id="chartVibraciones"></canvas></div>
             </div>
 
             <div class="data-box" style="border-top: 5px solid #e74c3c; margin-top:20px;">
                 <h3>Historial de Capturas de Vibración</h3>
                 <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
-                    <select id="select-vibraciones" style="padding:10px; border-radius:5px; border:1px solid #ccc; flex-grow:1">
+                    <select id="select-vibraciones" style="padding:10px; border-radius:5px; border:1px solid #ccc; flex-grow:1; font-family:inherit;">
                         <option>Cargando lista...</option>
                     </select>
                     <button onclick="cargarVibracionHistorica()" class="btn-csv" style="background:#34495e!important">Ver Captura Seleccionada</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-visor" class="modal">
+        <span class="close-modal" onclick="cerrarVisor()">&times;</span>
+        <div class="modal-content">
+            <div class="chart-toolbar">
+                <button onclick="chartModal.resetZoom(); resetUserLimit();"><i class="fa-solid fa-house"></i></button>
+                <button onclick="moveChart(chartModal, -0.2)"><i class="fa-solid fa-arrow-left"></i></button>
+                <button onclick="moveChart(chartModal, 0.2)"><i class="fa-solid fa-arrow-right"></i></button>
+                <button onclick="descargarImagen()" style="margin-left: 10px;"><i class="fa-solid fa-camera"></i> Capturar</button>
+                <span id="titulo-visor" style="margin-left: 20px; font-weight: bold; font-size: 1.2rem;"></span>
+            </div>
+            <div class="canvas-wrapper-modal">
+                <canvas id="chartModal"></canvas>
             </div>
         </div>
     </div>
