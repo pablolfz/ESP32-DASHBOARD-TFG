@@ -20,13 +20,13 @@ body { font-family: 'Segoe UI', sans-serif; margin: 0; background-color: var(--c
 
 .nav { display: flex; gap: 15px; align-items: center; }
 .nav a { text-decoration: none; color: var(--color-primary); font-weight: 700; font-size: 1rem; }
-.btn-csv { background: #27ae60 !important; color: white !important; padding: 8px 14px; border-radius: 6px; font-weight: bold; display: flex; align-items: center; gap: 6px; }
+.btn-csv { background: #27ae60 !important; color: white !important; padding: 8px 14px; border-radius: 6px; font-weight: bold; display: flex; align-items: center; gap: 6px; text-decoration: none; }
 
-/* GRID RECUADROS */
+/* RECUADROS */
 .container { max-width: 98%; margin: 1rem auto; padding: 0 10px; }
 .current-data-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.8rem; margin-bottom: 2rem; }
 .data-box { padding: 1.2rem 1rem; border-radius: 12px; border-top: 5px solid #333; background: white; box-shadow: 0 3px 6px rgba(0,0,0,0.04); }
-.data-box h3 { font-size: 0.95rem; margin-top: 0; text-transform: uppercase; color: #444; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 10px; }
+.data-box h3 { font-size: 0.9rem; margin-top: 0; text-transform: uppercase; color: #444; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 10px; }
 
 .env-row { display: flex; justify-content: space-between; font-size: 1.1rem; padding: 4px 0; }
 .data-value-small { display: flex; justify-content: space-between; font-weight: 800; font-size: 1.2rem; padding: 6px 0; border-bottom: 1px solid #f5f5f5; }
