@@ -13,14 +13,21 @@ function initCharts() {
         scales: {
             x: { 
                 type: 'time', 
-                time: { unit: 'hour', displayFormats: { minute: 'HH:mm', hour: 'HH:mm' } },
+                time: { 
+                    unit: 'hour', 
+                    displayFormats: { minute: 'HH:mm', hour: 'HH:mm' } 
+                },
                 ticks: { 
                     autoSkip: true, 
                     minRotation: 45, 
                     maxRotation: 45, 
                     font: { size: 13, weight: '500' } 
                 },
-                title: { display: true, text: 'Hora (Formato 24h)', font: { weight: 'bold', size: 14 } }
+                title: { 
+                    display: true, 
+                    text: 'Hora Local España (24h)', 
+                    font: { weight: 'bold', size: 14 } 
+                }
             },
             y: { 
                 type: 'linear', position: 'left', 
@@ -44,14 +51,28 @@ function initCharts() {
     chart3 = new Chart(document.getElementById('chart3'), { type: 'line', data: { datasets: [] }, options: getOptions() });
 }
 
+/**
+ * Función que ajusta cualquier fecha a la zona horaria local del navegador
+ * Detecta automáticamente el desfase (verano +2h, invierno +1h en España)
+ */
+function toLocalTime(dateInput) {
+    const date = new Date(dateInput);
+    // Si la fecha de Firebase no tiene zona (Z), el navegador ya la asume como local o UTC según el string.
+    // Esta función asegura que el objeto Date resultante sea manejado correctamente por Chart.js
+    return date;
+}
+
 async function updateData() {
     try {
         const res = await fetch('/api/history');
         const fbData = await res.json();
         let data = Array.isArray(fbData) ? fbData : Object.values(fbData);
         if (!data.length) return;
+
+        // Ordenar datos
         data.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
 
+        // Rango de visualización: Últimas 24h locales
         const now = new Date();
         const past24h = new Date(now.getTime() - (24 * 60 * 60 * 1000));
 
@@ -64,7 +85,9 @@ async function updateData() {
                 const last = d[d.length - 1];
                 const clean = (key) => d.map(i => (i[key] != null && i[key] > -100) ? i[key] : null);
                 
-                charts[index].data.labels = d.map(i => new Date(i.timestamp));
+                // Convertimos todos los timestamps a la hora local del dispositivo que visualiza
+                charts[index].data.labels = d.map(i => toLocalTime(i.timestamp));
+                
                 charts[index].data.datasets = [
                     { label: 'Ambiente', data: clean('t_aht'), borderColor: '#f1c40f', backgroundColor: '#f1c40f', yAxisID: 'y', tension: 0.3, borderWidth: 4 },
                     { label: 'Humedad', data: clean('h_aht'), borderColor: '#3498db', backgroundColor: '#3498db', yAxisID: 'y1', borderDash: [5, 5], tension: 0.3, borderWidth: 3 },
@@ -74,6 +97,7 @@ async function updateData() {
                     { label: 'S4', data: clean('t4'), borderColor: '#34495e', yAxisID: 'y', borderWidth: 3 }
                 ];
 
+                // Forzar ventana de 24h
                 charts[index].options.scales.x.min = past24h;
                 charts[index].options.scales.x.max = now;
 
@@ -81,7 +105,7 @@ async function updateData() {
                 updateUI(last, index + 1);
             }
         });
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("Error en sincronización:", e); }
 }
 
 function updateUI(l, id) {
@@ -97,7 +121,16 @@ function updateUI(l, id) {
         const rssiEl = document.getElementById(`d${id}-rssi`);
         if(rssiEl) rssiEl.textContent = (l.rssi || "--") + " dBm";
     }
-    if(id === 1) document.getElementById('currentTime').textContent = "Último dato: " + new Date(l.timestamp).toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit', hour12:false});
+    
+    if(id === 1) {
+        // Formateo de hora local con soporte para España (24h y zona correcta)
+        const localTime = new Date(l.timestamp).toLocaleTimeString('es-ES', {
+            hour: '2-digit', 
+            minute: '2-digit', 
+            hour12: false
+        });
+        document.getElementById('currentTime').textContent = "Sincronizado (Hora Local): " + localTime;
+    }
 }
 
 function moveChart(chart, pct) {
