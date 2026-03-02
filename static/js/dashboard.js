@@ -1,22 +1,10 @@
+// Declaración de variables globales
 let chart1, chart2, chart3;
 
 document.addEventListener('DOMContentLoaded', () => {
     initCharts();
     updateData();
-    setInterval(updateData, 30000);
-});
-
-function initCharts() {
-    const getOptions = () => ({
-        responsive: true, 
-        maintainAspectRatio: false,
-        scales: {
-            x: { let chart1, chart2, chart3;
-
-document.addEventListener('DOMContentLoaded', () => {
-    initCharts();
-    updateData();
-    setInterval(updateData, 30000);
+    setInterval(updateData, 30000); // Refresco cada 30 segundos
 });
 
 function initCharts() {
@@ -38,27 +26,53 @@ function initCharts() {
                 },
                 title: { 
                     display: true, 
-                    text: 'Hora', // Texto simplificado según tu petición
+                    text: 'Hora', 
                     font: { weight: 'bold', size: 14 } 
                 }
             },
             y: { 
-                type: 'linear', position: 'left', 
-                title: { display: true, text: 'Temperatura (°C)', font: { weight: 'bold', size: 15 }, color: '#c0392b' },
+                type: 'linear', 
+                position: 'left', 
+                title: { 
+                    display: true, 
+                    text: 'Temperatura (°C)', 
+                    font: { weight: 'bold', size: 15 }, 
+                    color: '#c0392b' 
+                },
                 ticks: { font: { size: 13, weight: 'bold' } }
             },
             y1: { 
-                type: 'linear', position: 'right', min: 0, max: 100, grid: { drawOnChartArea: false }, 
-                title: { display: true, text: 'Humedad (%)', font: { weight: 'bold', size: 15 }, color: '#2980b9' },
+                type: 'linear', 
+                position: 'right', 
+                min: 0, 
+                max: 100, 
+                grid: { drawOnChartArea: false }, 
+                title: { 
+                    display: true, 
+                    text: 'Humedad (%)', 
+                    font: { weight: 'bold', size: 15 }, 
+                    color: '#2980b9' 
+                },
                 ticks: { font: { size: 13, weight: 'bold' } }
             }
         },
         plugins: { 
-            legend: { position: 'bottom', labels: { boxWidth: 20, padding: 20, font: { size: 16, weight: 'bold' } } },
-            zoom: { pan: { enabled: true, mode: 'x' }, zoom: { wheel: { enabled: false }, mode: 'x' } } 
+            legend: { 
+                position: 'bottom',
+                labels: { 
+                    boxWidth: 20, 
+                    padding: 20,
+                    font: { size: 16, weight: 'bold' } 
+                } 
+            },
+            zoom: { 
+                pan: { enabled: true, mode: 'x' }, 
+                zoom: { wheel: { enabled: false }, mode: 'x' } 
+            } 
         }
     });
 
+    // Inicialización de las 3 gráficas
     chart1 = new Chart(document.getElementById('chart1'), { type: 'line', data: { datasets: [] }, options: getOptions() });
     chart2 = new Chart(document.getElementById('chart2'), { type: 'line', data: { datasets: [] }, options: getOptions() });
     chart3 = new Chart(document.getElementById('chart3'), { type: 'line', data: { datasets: [] }, options: getOptions() });
@@ -68,12 +82,16 @@ async function updateData() {
     try {
         const res = await fetch('/api/history');
         const fbData = await res.json();
+        
+        // Convertir objeto a array si es necesario y filtrar nulos
         let data = Array.isArray(fbData) ? fbData : Object.values(fbData);
-        if (!data.length) return;
+        data = data.filter(item => item && item.timestamp);
+        
+        if (data.length === 0) return;
 
-        data.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+        // Ordenar por fecha (el navegador lo convierte a hora local automáticamente)
+        data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-        // Rango: Últimas 24h locales
         const now = new Date();
         const past24h = new Date(now.getTime() - (24 * 60 * 60 * 1000));
 
@@ -81,14 +99,13 @@ async function updateData() {
         const charts = [chart1, chart2, chart3];
 
         deviceIds.forEach((ids, index) => {
-            const d = data.filter(i => ids.includes(i.device_id));
+            const d = data.filter(i => i.device_id && ids.includes(i.device_id));
+            
             if (charts[index] && d.length > 0) {
                 const last = d[d.length - 1];
-                const clean = (key) => d.map(i => (i[key] != null && i[key] > -100) ? i[key] : null);
+                const clean = (key) => d.map(i => (i[key] !== null && i[key] > -100) ? i[key] : null);
                 
-                // Conversión automática a zona horaria del sistema (España)
                 charts[index].data.labels = d.map(i => new Date(i.timestamp));
-                
                 charts[index].data.datasets = [
                     { label: 'Ambiente', data: clean('t_aht'), borderColor: '#f1c40f', backgroundColor: '#f1c40f', yAxisID: 'y', tension: 0.3, borderWidth: 4 },
                     { label: 'Humedad', data: clean('h_aht'), borderColor: '#3498db', backgroundColor: '#3498db', yAxisID: 'y1', borderDash: [5, 5], tension: 0.3, borderWidth: 3 },
@@ -98,6 +115,7 @@ async function updateData() {
                     { label: 'S4', data: clean('t4'), borderColor: '#34495e', yAxisID: 'y', borderWidth: 3 }
                 ];
 
+                // Ajuste automático al rango de las últimas 24h
                 charts[index].options.scales.x.min = past24h;
                 charts[index].options.scales.x.max = now;
 
@@ -105,25 +123,31 @@ async function updateData() {
                 updateUI(last, index + 1);
             }
         });
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+        console.error("Error cargando datos:", e); 
+    }
 }
 
 function updateUI(l, id) {
-    const fmt = (v) => v != null ? parseFloat(v).toFixed(1) : "--";
+    const fmt = (v) => (v !== null && v !== undefined) ? parseFloat(v).toFixed(1) : "--";
+    
+    // Actualizar valores en los recuadros
     const tElem = document.getElementById(`d${id}-t`);
-    if(tElem) {
+    if (tElem) {
         tElem.textContent = fmt(l.t_aht) + "°";
         document.getElementById(`d${id}-h`).textContent = fmt(l.h_aht) + "%";
-        for(let s=1; s<=4; s++) {
+        
+        for (let s = 1; s <= 4; s++) {
             const el = document.getElementById(`d${id}-s${s}`);
-            if(el) el.textContent = fmt(l[`t${s}`]) + " °C";
+            if (el) el.textContent = fmt(l[`t${s}`]) + " °C";
         }
+        
         const rssiEl = document.getElementById(`d${id}-rssi`);
-        if(rssiEl) rssiEl.textContent = (l.rssi || "--") + " dBm";
+        if (rssiEl) rssiEl.textContent = (l.rssi || "--") + " dBm";
     }
     
-    if(id === 1) {
-        // Texto solicitado: "Hora de sincronización"
+    // Actualizar hora de sincronización (solo para el dispositivo principal)
+    if (id === 1) {
         const time = new Date(l.timestamp).toLocaleTimeString('es-ES', {
             hour: '2-digit', 
             minute: '2-digit', 
@@ -133,6 +157,7 @@ function updateUI(l, id) {
     }
 }
 
+// Funciones de control de gráficas
 function moveChart(chart, pct) {
     const scale = chart.scales.x;
     const range = scale.max - scale.min;
@@ -149,141 +174,3 @@ function goToDate(chart, dateStr) {
     chart.options.scales.x.max = end;
     chart.update();
 }
-                type: 'time', 
-                time: { 
-                    unit: 'hour', 
-                    displayFormats: { minute: 'HH:mm', hour: 'HH:mm' } 
-                },
-                ticks: { 
-                    autoSkip: true, 
-                    minRotation: 45, 
-                    maxRotation: 45, 
-                    font: { size: 13, weight: '500' } 
-                },
-                title: { 
-                    display: true, 
-                    text: 'Hora Local España (24h)', 
-                    font: { weight: 'bold', size: 14 } 
-                }
-            },
-            y: { 
-                type: 'linear', position: 'left', 
-                title: { display: true, text: 'Temperatura (°C)', font: { weight: 'bold', size: 15 }, color: '#c0392b' },
-                ticks: { font: { size: 13, weight: 'bold' } }
-            },
-            y1: { 
-                type: 'linear', position: 'right', min: 0, max: 100, grid: { drawOnChartArea: false }, 
-                title: { display: true, text: 'Humedad (%)', font: { weight: 'bold', size: 15 }, color: '#2980b9' },
-                ticks: { font: { size: 13, weight: 'bold' } }
-            }
-        },
-        plugins: { 
-            legend: { position: 'bottom', labels: { boxWidth: 20, padding: 20, font: { size: 16, weight: 'bold' } } },
-            zoom: { pan: { enabled: true, mode: 'x' }, zoom: { wheel: { enabled: false }, mode: 'x' } } 
-        }
-    });
-
-    chart1 = new Chart(document.getElementById('chart1'), { type: 'line', data: { datasets: [] }, options: getOptions() });
-    chart2 = new Chart(document.getElementById('chart2'), { type: 'line', data: { datasets: [] }, options: getOptions() });
-    chart3 = new Chart(document.getElementById('chart3'), { type: 'line', data: { datasets: [] }, options: getOptions() });
-}
-
-/**
- * Función que ajusta cualquier fecha a la zona horaria local del navegador
- * Detecta automáticamente el desfase (verano +2h, invierno +1h en España)
- */
-function toLocalTime(dateInput) {
-    const date = new Date(dateInput);
-    // Si la fecha de Firebase no tiene zona (Z), el navegador ya la asume como local o UTC según el string.
-    // Esta función asegura que el objeto Date resultante sea manejado correctamente por Chart.js
-    return date;
-}
-
-async function updateData() {
-    try {
-        const res = await fetch('/api/history');
-        const fbData = await res.json();
-        let data = Array.isArray(fbData) ? fbData : Object.values(fbData);
-        if (!data.length) return;
-
-        // Ordenar datos
-        data.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-        // Rango de visualización: Últimas 24h locales
-        const now = new Date();
-        const past24h = new Date(now.getTime() - (24 * 60 * 60 * 1000));
-
-        const deviceIds = [['Estacion_1', 'Estacion_Remota'], ['Estacion_2'], ['Estacion_3']];
-        const charts = [chart1, chart2, chart3];
-
-        deviceIds.forEach((ids, index) => {
-            const d = data.filter(i => ids.includes(i.device_id));
-            if (charts[index] && d.length > 0) {
-                const last = d[d.length - 1];
-                const clean = (key) => d.map(i => (i[key] != null && i[key] > -100) ? i[key] : null);
-                
-                // Convertimos todos los timestamps a la hora local del dispositivo que visualiza
-                charts[index].data.labels = d.map(i => toLocalTime(i.timestamp));
-                
-                charts[index].data.datasets = [
-                    { label: 'Ambiente', data: clean('t_aht'), borderColor: '#f1c40f', backgroundColor: '#f1c40f', yAxisID: 'y', tension: 0.3, borderWidth: 4 },
-                    { label: 'Humedad', data: clean('h_aht'), borderColor: '#3498db', backgroundColor: '#3498db', yAxisID: 'y1', borderDash: [5, 5], tension: 0.3, borderWidth: 3 },
-                    { label: 'S1', data: clean('t1'), borderColor: '#e67e22', yAxisID: 'y', borderWidth: 3 },
-                    { label: 'S2', data: clean('t2'), borderColor: '#2ecc71', yAxisID: 'y', borderWidth: 3 },
-                    { label: 'S3', data: clean('t3'), borderColor: '#9b59b6', yAxisID: 'y', borderWidth: 3 },
-                    { label: 'S4', data: clean('t4'), borderColor: '#34495e', yAxisID: 'y', borderWidth: 3 }
-                ];
-
-                // Forzar ventana de 24h
-                charts[index].options.scales.x.min = past24h;
-                charts[index].options.scales.x.max = now;
-
-                charts[index].update('none');
-                updateUI(last, index + 1);
-            }
-        });
-    } catch (e) { console.error("Error en sincronización:", e); }
-}
-
-function updateUI(l, id) {
-    const fmt = (v) => v != null ? parseFloat(v).toFixed(1) : "--";
-    const tElem = document.getElementById(`d${id}-t`);
-    if(tElem) {
-        tElem.textContent = fmt(l.t_aht) + "°";
-        document.getElementById(`d${id}-h`).textContent = fmt(l.h_aht) + "%";
-        for(let s=1; s<=4; s++) {
-            const el = document.getElementById(`d${id}-s${s}`);
-            if(el) el.textContent = fmt(l[`t${s}`]) + " °C";
-        }
-        const rssiEl = document.getElementById(`d${id}-rssi`);
-        if(rssiEl) rssiEl.textContent = (l.rssi || "--") + " dBm";
-    }
-    
-    if(id === 1) {
-        // Formateo de hora local con soporte para España (24h y zona correcta)
-        const localTime = new Date(l.timestamp).toLocaleTimeString('es-ES', {
-            hour: '2-digit', 
-            minute: '2-digit', 
-            hour12: false
-        });
-        document.getElementById('currentTime').textContent = "Sincronizado (Hora Local): " + localTime;
-    }
-}
-
-function moveChart(chart, pct) {
-    const scale = chart.scales.x;
-    const range = scale.max - scale.min;
-    chart.options.scales.x.min = scale.min + (range * pct);
-    chart.options.scales.x.max = scale.max + (range * pct);
-    chart.update();
-}
-
-function goToDate(chart, dateStr) {
-    if (!dateStr) return;
-    const start = new Date(dateStr + "T00:00:00").getTime();
-    const end = start + 86400000;
-    chart.options.scales.x.min = start;
-    chart.options.scales.x.max = end;
-    chart.update();
-}
-
