@@ -25,7 +25,8 @@ def receive_data():
         device_id = data.get('id', 'Estacion_1')
         
         payload = {
-            "timestamp": datetime.now().isoformat(),
+            # Guardamos siempre en UTC estándar para que el JS lo convierta bien
+            "timestamp": datetime.utcnow().isoformat() + "Z", 
             "device_id": device_id,
             "t_aht": safe_float(data.get('t_aht')),
             "h_aht": safe_float(data.get('h_aht')),
@@ -77,3 +78,4 @@ def download_csv():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
+
