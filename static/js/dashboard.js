@@ -1,32 +1,38 @@
-// --- VARIABLES GLOBALES ---
 let chart1, chart2, chart3, chartVibraciones, chartModal;
-let datosVibMemoria = []; 
+let datosVibMemoria = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     initCharts();
     updateData();
     actualizarListaVibraciones();
-    
-    // Refresco automático de temperaturas cada 30 segundos
+    // Refresco automático de la pantalla principal cada 30 segundos
     setInterval(updateData, 30000);
 });
 
-// --- 1. CONFIGURACIÓN DE GRÁFICAS (FUENTES GRANDES Y 24H) ---
+// --- 1. CONFIGURACIÓN DE GRÁFICAS (FUENTES Y 24H) ---
 function initCharts() {
-    const getOptions = (yTitle, y1Title = null) => {
-        const options = {
+    const getOptions = (yTitle, isTime = true) => {
+        return {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
                 x: {
-                    type: 'time',
-                    time: { unit: 'minute', displayFormats: { minute: 'HH:mm', hour: 'HH:mm' } },
-                    ticks: { font: { size: 14 }, color: '#333' }, // Fuente etiquetas X
-                    title: { display: true, text: 'Hora', font: { size: 16, weight: 'bold' } }
+                    type: isTime ? 'time' : 'linear',
+                    time: isTime ? { unit: 'minute', displayFormats: { minute: 'HH:mm', hour: 'HH:mm' } } : {},
+                    ticks: { font: { size: 14 }, color: '#333' },
+                    title: { display: true, text: isTime ? 'Hora' : 'Tiempo (ms)', font: { size: 16, weight: 'bold' } }
                 },
                 y: {
-                    ticks: { font: { size: 14 }, color: '#333' }, // Fuente etiquetas Y
+                    ticks: { font: { size: 14 }, color: '#333' },
                     title: { display: true, text: yTitle, font: { size: 16, weight: 'bold' } }
+                },
+                y1: {
+                    display: isTime, // Solo para temperaturas (Humedad)
+                    position: 'right',
+                    min: 0, max: 100,
+                    ticks: { font: { size: 14 }, color: '#3498db' },
+                    title: { display: true, text: 'Hum (%)', font: { size: 16, weight: 'bold' } },
+                    grid: { drawOnChartArea: false }
                 }
             },
             plugins: {
@@ -36,56 +42,29 @@ function initCharts() {
                 }
             }
         };
-
-        // Si hay un segundo eje Y (Humedad)
-        if (y1Title) {
-            options.scales.y1 = {
-                position: 'right',
-                min: 0, max: 100,
-                ticks: { font: { size: 14 }, color: '#3498db' },
-                title: { display: true, text: y1Title, font: { size: 16, weight: 'bold' } },
-                grid: { drawOnChartArea: false }
-            };
-        }
-        return options;
     };
 
-    const ctx1 = document.getElementById('chart1').getContext('2d');
-    const ctx2 = document.getElementById('chart2').getContext('2d');
-    const ctx3 = document.getElementById('chart3').getContext('2d');
-    const ctxV = document.getElementById('chartVibraciones').getContext('2d');
-    const ctxM = document.getElementById('chartModal').getContext('2d');
+    chart1 = new Chart(document.getElementById('chart1').getContext('2d'), { type: 'line', data: { datasets: [] }, options: getOptions('Temp (°C)') });
+    chart2 = new Chart(document.getElementById('chart2').getContext('2d'), { type: 'line', data: { datasets: [] }, options: getOptions('Temp (°C)') });
+    chart3 = new Chart(document.getElementById('chart3').getContext('2d'), { type: 'line', data: { datasets: [] }, options: getOptions('Temp (°C)') });
 
-    // Inicialización Estaciones (6 líneas: Ambiente, S1, S2, S3, S4, Humedad)
-    chart1 = new Chart(ctx1, { type: 'line', data: { datasets: [] }, options: getOptions('Temperatura (°C)', 'Humedad (%)') });
-    chart2 = new Chart(ctx2, { type: 'line', data: { datasets: [] }, options: getOptions('Temperatura (°C)', 'Humedad (%)') });
-    chart3 = new Chart(ctx3, { type: 'line', data: { datasets: [] }, options: getOptions('Temperatura (°C)', 'Humedad (%)') });
-
-    // Vibraciones (Eje X lineal por ser alta frecuencia)
-    chartVibraciones = new Chart(ctxV, {
+    chartVibraciones = new Chart(document.getElementById('chartVibraciones').getContext('2d'), {
         type: 'line',
-        data: { datasets: [{ label: 'Vibración', data: [], borderColor: '#e74c3c', borderWidth: 1, pointRadius: 0 }] },
-        options: {
-            responsive: true, maintainAspectRatio: false, animation: false, parsing: false, normalized: true,
-            scales: {
-                x: { type: 'linear', ticks: { font: { size: 14 } }, title: { display: true, text: 'Tiempo (ms)', font: { size: 16, weight: 'bold' } } },
-                y: { ticks: { font: { size: 14 } }, title: { display: true, text: 'Amplitud', font: { size: 16, weight: 'bold' } } }
-            },
-            plugins: { zoom: { zoom: { wheel: { enabled: false }, drag: { enabled: true }, mode: 'x' }, pan: { enabled: true, mode: 'x' } } }
-        }
+        data: { datasets: [{ label: 'Piezo', data: [], borderColor: '#e74c3c', borderWidth: 1, pointRadius: 0 }] },
+        options: { ...getOptions('Amplitud', false), animation: false, parsing: false, normalized: true }
     });
 
-    chartModal = new Chart(ctxM, { type: 'line', data: { datasets: [] }, options: getOptions('Valores') });
+    // Gráfica del Modal (Se configura dinámicamente al abrir)
+    chartModal = new Chart(document.getElementById('chartModal').getContext('2d'), { type: 'line', data: { datasets: [] }, options: getOptions('Valores') });
 }
 
-// --- 2. ACTUALIZACIÓN DE DATOS Y RECUADROS ---
+// --- 2. ACTUALIZACIÓN DE DATOS REAL-TIME ---
 async function updateData() {
     try {
         const res = await fetch('/api/history');
         const data = await res.json();
         if (!data || data.length === 0) return;
 
-        // Hora en formato 24h
         document.getElementById('currentTime').textContent = "Sincronizado: " + new Date().toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
 
         [1, 2, 3].forEach(num => {
@@ -93,13 +72,13 @@ async function updateData() {
             if (filtered.length > 0) {
                 const d = filtered[filtered.length - 1];
                 
-                // Rellenar Recuadros
+                // Unidades en recuadros
                 const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val ? val.toFixed(1) : "--"; };
                 set(`d${num}-t`, d.t_aht); set(`d${num}-h`, d.h_aht);
                 set(`d${num}-s1`, d.t1); set(`d${num}-s2`, d.t2); set(`d${num}-s3`, d.t3); set(`d${num}-s4`, d.t4);
                 if(document.getElementById(`d${num}-rssi`)) document.getElementById(`d${num}-rssi`).textContent = d.rssi || "--";
 
-                // Actualizar Gráfica (6 líneas)
+                // Gráfica de estación (6 líneas)
                 const chartObj = [chart1, chart2, chart3][num-1];
                 chartObj.data.datasets = [
                     { label: 'Ambiente', data: filtered.map(i => ({x: new Date(i.timestamp), y: i.t_aht})), borderColor: '#f1c40f', yAxisID: 'y' },
@@ -112,11 +91,51 @@ async function updateData() {
                 chartObj.update('none');
             }
         });
-    } catch (e) { console.error("Error cargando temperaturas:", e); }
+    } catch (e) { console.error(e); }
 }
 
-// --- 3. FUNCIONES DE DESCARGA Y CONTROL ---
+// --- 3. MAXIVISOR (ESTÁTICO AL ACTUALIZAR) ---
+function abrirMaxivisor(chartOrigen, titulo) {
+    document.getElementById('modal-visor').style.display = 'block';
+    document.getElementById('titulo-visor').textContent = titulo;
 
+    // Clonamos datos para que no se actualicen solos
+    chartModal.data = JSON.parse(JSON.stringify(chartOrigen.data));
+    
+    // Si es tipo tiempo, convertimos los strings de vuelta a objetos Date
+    if (chartOrigen.options.scales.x.type === 'time') {
+        chartModal.options.scales.x.type = 'time';
+        chartModal.data.datasets.forEach(ds => {
+            ds.data.forEach(p => { p.x = new Date(p.x); });
+        });
+    } else {
+        chartModal.options.scales.x.type = 'linear';
+    }
+    
+    chartModal.resetZoom();
+    chartModal.update('none');
+}
+
+// --- 4. FUNCIONES DE DESCARGA ---
+function descargarImagen(chart, nombre) {
+    const link = document.createElement('a');
+    link.download = `${nombre}_${new Date().getTime()}.png`;
+    link.href = chart.toBase64Image();
+    link.click();
+}
+
+function descargarCSVVibracion() {
+    const data = chartVibraciones.data.datasets[0].data;
+    if (!data.length) return alert("Carga una muestra primero");
+    let csv = "Tiempo (ms),Amplitud\n" + data.map(p => `${p.x},${p.y}`).join("\n");
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Piezo_Muestra_${new Date().getTime()}.csv`;
+    link.click();
+}
+
+// --- 5. CONTROL MANUAL Y PIEZOELÉCTRICO ---
 function moveChart(chart, offset) {
     const scale = chart.scales.x;
     const range = scale.max - scale.min;
@@ -125,58 +144,23 @@ function moveChart(chart, offset) {
     chart.update('none');
 }
 
-// Descargar Imagen PNG
-function descargarImagen(chartInstance, nombreGrafica) {
-    const link = document.createElement('a');
-    link.download = `Captura_${nombreGrafica}_${new Date().getTime()}.png`;
-    link.href = chartInstance.toBase64Image();
-    link.click();
-}
-
-// Descargar CSV de la Vibración Cargada
-function descargarCSVVibracion() {
-    const dataPoints = chartVibraciones.data.datasets[0].data;
-    if (!dataPoints || dataPoints.length === 0) {
-        alert("Primero carga una captura del historial.");
-        return;
-    }
-
-    let csvContent = "data:text/csv;charset=utf-8,Tiempo (ms),Amplitud\n";
-    dataPoints.forEach(p => { csvContent += `${p.x},${p.y}\n`; });
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Vibracion_Muestra_${new Date().getTime()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-// --- 4. LÓGICA DE VIBRACIONES ---
-
 async function actualizarListaVibraciones() {
-    try {
-        const res = await fetch('/api/vibrations/list');
-        const lista = await res.json();
-        document.getElementById('select-vibraciones').innerHTML = lista.map(v => 
-            `<option value="${v.id}">${new Date(v.fecha).toLocaleString('es-ES')}</option>`
-        ).join('');
-    } catch (e) { console.error("Error lista vib:", e); }
+    const res = await fetch('/api/vibrations/list');
+    const lista = await res.json();
+    document.getElementById('select-vibraciones').innerHTML = lista.map(v => 
+        `<option value="${v.id}">${new Date(v.fecha).toLocaleString('es-ES')}</option>`
+    ).join('');
 }
 
 async function cargarVibracionHistorica() {
     const id = document.getElementById('select-vibraciones').value;
-    if (!id) return;
-    try {
-        const res = await fetch(`/api/vibrations/get/${id}`);
-        const data = await res.json();
-        if (data && data.values) {
-            // Frecuencia 5kHz -> 0.2ms por muestra
-            chartVibraciones.data.datasets[0].data = data.values.map((y, i) => ({ x: i * 0.2, y: y }));
-            chartVibraciones.update('none');
-        }
-    } catch (e) { console.error("Error cargando muestra:", e); }
+    const res = await fetch(`/api/vibrations/get/${id}`);
+    const data = await res.json();
+    if (data && data.values) {
+        datosVibMemoria = data.values;
+        chartVibraciones.data.datasets[0].data = data.values.map((y, i) => ({ x: i * 0.2, y: y }));
+        chartVibraciones.update('none');
+    }
 }
 
 function cerrarVisor() { document.getElementById('modal-visor').style.display = 'none'; }
