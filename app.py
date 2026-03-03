@@ -158,5 +158,7 @@ def get_vibration_detail(id):
         return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == '__main__':
+    # Obtenemos el puerto de Render; si no existe, usamos 10000 por defecto
     port = int(os.environ.get('PORT', 10000))
-    app.run(host='0.0.0.0', port=port)
+    # Forzamos debug=False para producción y nos aseguramos de escuchar en 0.0.0.0
+    app.run(host='0.0.0.0', port=port, debug=False)
