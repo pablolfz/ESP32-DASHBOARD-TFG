@@ -81,27 +81,25 @@ def post_vibration():
         url = f"{FIREBASE_VIB_URL}/{id_cap}.json"
         curr = requests.get(url).json()
         
-        # Nuevos bloques de los 3 canales recibidos del ESP32
-        v1 = data.get('v1', [])
-        v2 = data.get('v2', [])
-        v3 = data.get('v3', [])
+        # Compatibilidad: Aceptamos v1 (triaxial) o ch1 (versión anterior)
+        v1 = data.get('v1') or data.get('ch1') or []
+        v2 = data.get('v2') or data.get('ch2') or []
+        v3 = data.get('v3') or data.get('ch3') or []
 
-        # Preparamos el payload base con metadatos actualizados
-        # Actualizar el timestamp en cada bloque es vital para que el Dashboard detecte cambios
+        # Siempre incluimos el timestamp para que el Dashboard lo ordene bien
         payload = {
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "device_id": data.get('device', 'ESP32_Triaxial')
         }
 
-        if curr and "v1" in curr:
-            # Si la captura ya existe, unimos los nuevos bloques a los anteriores
+        if curr and isinstance(curr, dict) and "v1" in curr:
+            # Unión de bloques existentes
             payload["v1"] = curr.get("v1", []) + v1
             payload["v2"] = curr.get("v2", []) + v2
             payload["v3"] = curr.get("v3", []) + v3
-            # Usamos patch para actualizar solo los campos necesarios
             requests.patch(url, json=payload, timeout=30)
         else:
-            # Si es la primera parte de la captura, creamos el registro completo
+            # Nueva captura
             payload["v1"] = v1
             payload["v2"] = v2
             payload["v3"] = v3
@@ -116,8 +114,17 @@ def list_vibrations():
     try:
         res = requests.get(f"{FIREBASE_VIB_URL}.json", timeout=10).json()
         if not res: return jsonify([])
-        # Listamos capturas válidas ordenadas por fecha (descendente)
-        return jsonify([{"id": k, "fecha": v.get('timestamp')} for k, v in res.items() if v and isinstance(v, dict)][::-1])
+        
+        # Generamos la lista asegurando que cada item tenga una fecha para evitar errores en el JS
+        lista = []
+        for k, v in res.items():
+            if v and isinstance(v, dict):
+                fecha = v.get('timestamp') or datetime.utcnow().isoformat() + "Z"
+                lista.append({"id": k, "fecha": fecha})
+        
+        # Ordenamos por fecha descendente
+        lista.sort(key=lambda x: x['fecha'], reverse=True)
+        return jsonify(lista)
     except:
         return jsonify([])
 
@@ -125,6 +132,11 @@ def list_vibrations():
 def get_vibration_detail(id):
     try:
         res = requests.get(f"{FIREBASE_VIB_URL}/{id}.json", timeout=25).json()
+        # Si los datos vienen como ch1, ch2, ch3, los normalizamos a v1, v2, v3 para el JS
+        if res and isinstance(res, dict):
+            if 'ch1' in res and 'v1' not in res: res['v1'] = res.pop('ch1')
+            if 'ch2' in res and 'v2' not in res: res['v2'] = res.pop('ch2')
+            if 'ch3' in res and 'v3' not in res: res['v3'] = res.pop('ch3')
         return jsonify(res)
     except:
         return jsonify({"status": "error"}), 500
