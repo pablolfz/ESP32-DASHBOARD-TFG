@@ -17,16 +17,26 @@ function initCharts() {
                 ticks: { font: { size: 14 } },
                 title: { display: true, text: isTime ? 'Hora' : 'Tiempo (ms)', font: { size: 16, weight: 'bold' } }
             },
-            y: { ticks: { font: { size: 14 } }, title: { display: true, text: yTitle, font: { size: 16, weight: 'bold' } } }
+            y: { ticks: { font: { size: 14 } }, title: { display: true, text: yTitle, font: { size: 16, weight: 'bold' } } },
+            y1: { 
+                display: isTime, position: 'right', min: 0, max: 100,
+                ticks: { font: { size: 14 }, color: '#3498db' },
+                title: { display: true, text: 'Hum (%)', font: { size: 16, weight: 'bold' } },
+                grid: { drawOnChartArea: false }
+            }
         },
         plugins: { zoom: { zoom: { wheel: { enabled: false }, drag: { enabled: true }, mode: 'x' }, pan: { enabled: true, mode: 'x' } } }
     });
 
     chart1 = new Chart(document.getElementById('chart1').getContext('2d'), { type: 'line', data: { datasets: [] }, options: getOptions('Temp (°C)') });
+    chart2 = new Chart(document.getElementById('chart2').getContext('2d'), { type: 'line', data: { datasets: [] }, options: getOptions('Temp (°C)') });
+    chart3 = new Chart(document.getElementById('chart3').getContext('2d'), { type: 'line', data: { datasets: [] }, options: getOptions('Temp (°C)') });
+
     chartVibraciones = new Chart(document.getElementById('chartVibraciones').getContext('2d'), { 
         type: 'line', data: { datasets: [{ label: 'Piezo', data: [], borderColor: '#e74c3c', borderWidth: 1, pointRadius: 0 }] }, 
         options: { ...getOptions('Amplitud', false), animation: false, parsing: false, normalized: true } 
     });
+
     chartModal = new Chart(document.getElementById('chartModal').getContext('2d'), { type: 'line', data: { datasets: [] }, options: getOptions('Valores') });
 }
 
@@ -38,6 +48,8 @@ async function updateData() {
 
         document.getElementById('currentTime').textContent = "Sincronizado: " + new Date().toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
 
+        const charts = [chart1, chart2, chart3];
+
         [1, 2, 3].forEach(num => {
             const filtered = data.filter(i => String(i.device_id).includes(num.toString())).sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
             if (filtered.length > 0) {
@@ -47,25 +59,19 @@ async function updateData() {
                 set(`d${num}-t`, d.t_aht); set(`d${num}-h`, d.h_aht);
                 set(`d${num}-s1`, d.t1); set(`d${num}-s2`, d.t2); set(`d${num}-s3`, d.t3); set(`d${num}-s4`, d.t4);
                 if(document.getElementById(`d${num}-rssi`)) document.getElementById(`d${num}-rssi`).textContent = d.rssi || "--";
-                
-                if(num === 1) { // Ejemplo para chart1
-                    chart1.data.labels = filtered.map(i => new Date(i.timestamp));
-                    chart1.data.datasets = [{ label: 'Ambiente', data: filtered.map(i => i.t_aht), borderColor: '#f1c40f' }];
-                    chart1.update('none');
-                }
+
+                const cObj = charts[num-1];
+                cObj.data.datasets = [
+                    { label: 'Ambiente', data: filtered.map(i => ({x: new Date(i.timestamp), y: i.t_aht})), borderColor: '#f1c40f', yAxisID: 'y' },
+                    { label: 'S1', data: filtered.map(i => ({x: new Date(i.timestamp), y: i.t1})), borderColor: '#e67e22' },
+                    { label: 'S2', data: filtered.map(i => ({x: new Date(i.timestamp), y: i.t2})), borderColor: '#9b59b6' },
+                    { label: 'S3', data: filtered.map(i => ({x: new Date(i.timestamp), y: i.t3})), borderColor: '#00acc1' },
+                    { label: 'S4', data: filtered.map(i => ({x: new Date(i.timestamp), y: i.t4})), borderColor: '#1abc9c' },
+                    { label: 'Humedad', data: filtered.map(i => ({x: new Date(i.timestamp), y: i.h_aht})), borderColor: '#3498db', yAxisID: 'y1', borderDash: [5,5] }
+                ];
+                cObj.update('none');
             }
         });
-    } catch (e) { console.error(e); }
-}
-
-async function actualizarListaVibraciones() {
-    try {
-        const res = await fetch('/api/vibrations/list');
-        const lista = await res.json();
-        const select = document.getElementById('select-vibraciones');
-        if (select && lista.length > 0) {
-            select.innerHTML = lista.map(v => `<option value="${v.id}">${new Date(v.fecha).toLocaleString('es-ES')}</option>`).join('');
-        }
     } catch (e) { console.error(e); }
 }
 
@@ -74,14 +80,56 @@ function abrirMaxivisor(chartOrigen, titulo) {
     document.getElementById('titulo-visor').textContent = titulo;
     chartModal.data = JSON.parse(JSON.stringify(chartOrigen.data));
     chartModal.options.scales.x.type = chartOrigen.options.scales.x.type;
+    // Restaurar objetos Date si es escala de tiempo
+    if(chartModal.options.scales.x.type === 'time') {
+        chartModal.data.datasets.forEach(ds => { ds.data.forEach(p => p.x = new Date(p.x)); });
+    }
+    chartModal.resetZoom();
     chartModal.update('none');
 }
 
-function cerrarVisor() { document.getElementById('modal-visor').style.display = 'none'; }
+function moveChart(chart, offset) {
+    const scale = chart.scales.x;
+    const range = scale.max - scale.min;
+    chart.options.scales.x.min = scale.min + (range * offset);
+    chart.options.scales.x.max = scale.max + (range * offset);
+    chart.update('none');
+}
+
+async function actualizarListaVibraciones() {
+    try {
+        const res = await fetch('/api/vibrations/list');
+        const lista = await res.json();
+        document.getElementById('select-vibraciones').innerHTML = lista.map(v => 
+            `<option value="${v.id}">${new Date(v.fecha).toLocaleString('es-ES')}</option>`
+        ).join('');
+    } catch (e) { console.error(e); }
+}
+
+async function cargarVibracionHistorica() {
+    const id = document.getElementById('select-vibraciones').value;
+    const res = await fetch(`/api/vibrations/get/${id}`);
+    const data = await res.json();
+    if (data && data.values) {
+        chartVibraciones.data.datasets[0].data = data.values.map((y, i) => ({ x: i * 0.2, y: y }));
+        chartVibraciones.update('none');
+    }
+}
 
 function descargarImagen(chart, nombre) {
     const link = document.createElement('a');
-    link.download = `${nombre}.png`;
+    link.download = `${nombre}_${new Date().getTime()}.png`;
     link.href = chart.toBase64Image();
     link.click();
 }
+
+function descargarCSVVibracion() {
+    const data = chartVibraciones.data.datasets[0].data;
+    let csv = "Tiempo (ms),Amplitud\n" + data.map(p => `${p.x},${p.y}`).join("\n");
+    const link = document.createElement("a");
+    link.href = 'data:text/csv;charset=utf-8,' + encodeURI(csv);
+    link.download = `Vibracion_${new Date().getTime()}.csv`;
+    link.click();
+}
+
+function cerrarVisor() { document.getElementById('modal-visor').style.display = 'none'; }
