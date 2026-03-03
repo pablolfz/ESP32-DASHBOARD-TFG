@@ -44,7 +44,6 @@
                     <div class="env-row"><span>E3</span><span><b id="d3-t">--</b> °C</span><span><b id="d3-h">--</b> %</span></div>
                 </div>
             </div>
-
             <div class="data-box" id="box-dev1">
                 <h3>Sondas E1 <i class="fa-solid fa-temperature-half"></i></h3>
                 <div class="data-value-small"><span>S1:</span> <span><b id="d1-s1">--</b> °C</span></div>
@@ -52,7 +51,6 @@
                 <div class="data-value-small"><span>S3:</span> <span><b id="d1-s3">--</b> °C</span></div>
                 <div class="data-value-small"><span>S4:</span> <span><b id="d1-s4">--</b> °C</span></div>
             </div>
-
             <div class="data-box" id="box-dev2">
                 <h3>Sondas E2 <i class="fa-solid fa-temperature-half"></i></h3>
                 <div class="data-value-small"><span>S1:</span> <span><b id="d2-s1">--</b> °C</span></div>
@@ -60,7 +58,6 @@
                 <div class="data-value-small"><span>S3:</span> <span><b id="d2-s3">--</b> °C</span></div>
                 <div class="data-value-small"><span>S4:</span> <span><b id="d2-s4">--</b> °C</span></div>
             </div>
-
             <div class="data-box" id="box-dev3">
                 <h3>Sondas E3 <i class="fa-solid fa-temperature-half"></i></h3>
                 <div class="data-value-small"><span>S1:</span> <span><b id="d3-s1">--</b> °C</span></div>
@@ -68,7 +65,6 @@
                 <div class="data-value-small"><span>S3:</span> <span><b id="d3-s3">--</b> °C</span></div>
                 <div class="data-value-small"><span>S4:</span> <span><b id="d3-s4">--</b> °C</span></div>
             </div>
-
             <div class="data-box" id="box-signal">
                 <h3>Señal (RSSI) <i class="fa-solid fa-signal"></i></h3>
                 <div class="data-value-small"><span>E1:</span> <span><b id="d1-rssi">--</b> dBm</span></div>
@@ -86,25 +82,40 @@
             <div class="canvas-wrapper" onclick="abrirMaxivisor(chart1, 'Estación 1')"><canvas id="chart1"></canvas></div>
         </div>
 
+        <div class="chart-container">
+            <h2>Historial Estación 2</h2>
+            <div class="chart-toolbar">
+                <button onclick="chart2.resetZoom()"><i class="fa-solid fa-house"></i></button>
+                <button onclick="descargarImagen(chart2, 'E2')"><i class="fa-solid fa-camera"></i></button>
+            </div>
+            <div class="canvas-wrapper" onclick="abrirMaxivisor(chart2, 'Estación 2')"><canvas id="chart2"></canvas></div>
+        </div>
+
+        <div class="chart-container">
+            <h2>Historial Estación 3</h2>
+            <div class="chart-toolbar">
+                <button onclick="chart3.resetZoom()"><i class="fa-solid fa-house"></i></button>
+                <button onclick="descargarImagen(chart3, 'E3')"><i class="fa-solid fa-camera"></i></button>
+            </div>
+            <div class="canvas-wrapper" onclick="abrirMaxivisor(chart3, 'Estación 3')"><canvas id="chart3"></canvas></div>
+        </div>
+
         <div id="seccion-piezo">
             <h1 class="main-title">Análisis de medidas (Piezoeléctrico)</h1>
             <div class="chart-container">
                 <div class="chart-toolbar">
                     <button onclick="chartVibraciones.resetZoom()"><i class="fa-solid fa-house"></i></button>
                     <button onclick="descargarImagen(chartVibraciones, 'Piezo')"><i class="fa-solid fa-camera"></i></button>
-                    <button onclick="descargarCSVVibracion()" class="btn-csv" style="background:#e67e22!important">Descargar CSV</button>
+                    <button onclick="descargarCSVVibracion()" class="btn-csv" style="background:#e67e22!important">CSV Muestra</button>
                 </div>
-                <div class="canvas-wrapper" style="height:500px;" onclick="abrirMaxivisor(chartVibraciones, 'Sensor Piezoeléctrico')">
+                <div class="canvas-wrapper" style="height:500px;" onclick="abrirMaxivisor(chartVibraciones, 'Piezoeléctrico')">
                     <canvas id="chartVibraciones"></canvas>
                 </div>
             </div>
-
             <div class="data-box" style="border-top: 5px solid var(--color-accent); margin-top:20px;">
-                <h3>Historial de Capturas de Vibración</h3>
+                <h3>Historial de Capturas</h3>
                 <div style="display:flex; gap:10px; align-items:center;">
-                    <select id="select-vibraciones" style="flex-grow:1; padding:10px; border-radius:5px; border:1px solid #ccc;">
-                        <option>Cargando lista...</option>
-                    </select>
+                    <select id="select-vibraciones" style="flex-grow:1; padding:10px; border-radius:5px; border:1px solid #ccc;"></select>
                     <button onclick="cargarVibracionHistorica()" class="btn-csv" style="background:#34495e!important">Ver Captura</button>
                 </div>
             </div>
