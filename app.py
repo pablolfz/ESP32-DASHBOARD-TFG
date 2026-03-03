@@ -2,25 +2,27 @@ from flask import Flask, request, jsonify, render_template, make_response
 from datetime import datetime, timedelta
 import os, requests, csv, io
 
+# 1. Inicialización de la App (DEBE IR AQUÍ ARRIBA)
 app = Flask(__name__)
 
-# Aumentamos el límite de memoria para manejar las 3 señales (75,000 puntos en total)
+# Aumentamos el límite de memoria para los 3 sensores (aprox 75,000 puntos)
 app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024 
 
 # --- CONFIGURACIÓN DE FIREBASE ---
 FIREBASE_TEMPS_URL = "https://tfg2026-511e7-default-rtdb.europe-west1.firebasedatabase.app/readings.json"
 FIREBASE_VIB_URL = "https://tfg2026-511e7-default-rtdb.europe-west1.firebasedatabase.app/vibrations"
 
+# --- RUTAS DE NAVEGACIÓN ---
 @app.route('/')
 def index(): 
     return render_template('index.html')
 
-# --- API TEMPERATURAS ---
+# --- API TEMPERATURAS (ESP32 LoRa) ---
 @app.route('/api/data', methods=['POST'])
 def receive_data():
     try:
         data = request.get_json(silent=True)
-        if not data: return jsonify({"status": "error"}), 400
+        if not data: return jsonify({"status": "error", "message": "No data"}), 400
         
         payload = {
             "timestamp": datetime.utcnow().isoformat() + "Z", 
@@ -62,37 +64,37 @@ def download_csv():
             except: continue
             
         res = make_response(output.getvalue())
-        res.headers["Content-Disposition"] = "attachment; filename=Historico_Temperaturas_30d.csv"
+        res.headers["Content-Disposition"] = "attachment; filename=Historico_30d.csv"
         res.headers["Content-type"] = "text/csv"
         return res
     except:
-        return "Error al generar CSV", 500
+        return "Error", 500
 
-# --- API PIEZOELÉCTRICO (3 SENSORES SIMULTÁNEOS) ---
+# --- API PIEZOELÉCTRICO (Soporte 3 Sensores) ---
 @app.route('/api/vibrations', methods=['POST'])
 def post_vibration():
     try:
         data = request.get_json(force=True)
         id_cap = data.get('id')
-        if not id_cap: return jsonify({"status": "error", "message": "Falta ID de captura"}), 400
+        if not id_cap: return jsonify({"status": "error", "message": "No ID"}), 400
         
         url = f"{FIREBASE_VIB_URL}/{id_cap}.json"
         curr = requests.get(url).json()
         
-        # Obtenemos los nuevos bloques (v1, v2, v3)
+        # Nuevos bloques de los 3 canales
         v1 = data.get('v1', [])
         v2 = data.get('v2', [])
         v3 = data.get('v3', [])
 
         if curr and "v1" in curr:
-            # Si la captura ya existe, unimos los nuevos bloques
+            # Unión de bloques existentes
             requests.patch(url, json={
                 "v1": curr.get("v1", []) + v1,
                 "v2": curr.get("v2", []) + v2,
                 "v3": curr.get("v3", []) + v3
             }, timeout=30)
         else:
-            # Si es nueva, creamos el registro
+            # Creación de nueva captura
             payload = {
                 "timestamp": datetime.utcnow().isoformat() + "Z",
                 "device_id": data.get('device', 'ESP32_Triaxial'),
@@ -102,7 +104,6 @@ def post_vibration():
 
         return jsonify({"status": "success"}), 200
     except Exception as e:
-        print(f"Error en vibraciones: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/vibrations/list')
@@ -110,7 +111,6 @@ def list_vibrations():
     try:
         res = requests.get(f"{FIREBASE_VIB_URL}.json", timeout=10).json()
         if not res: return jsonify([])
-        # Listamos solo las claves que tienen datos válidos
         return jsonify([{"id": k, "fecha": v.get('timestamp')} for k, v in res.items() if v and isinstance(v, dict)][::-1])
     except:
         return jsonify([])
@@ -123,7 +123,7 @@ def get_vibration_detail(id):
     except:
         return jsonify({"status": "error"}), 500
 
+# Lanzamiento para Render
 if __name__ == '__main__':
-    # Configuración para Render
     port = int(os.environ.get('PORT', 10000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=port)
