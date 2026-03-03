@@ -1,4 +1,4 @@
-let chart1, chart2, chart3, chartVibraciones, chartModal;
+let chart1, chart2, chart3, chartVibTotal, chartVibPolar, chartModal;
 
 document.addEventListener('DOMContentLoaded', () => {
     initCharts();
@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateData, 30000);
 });
 
+// --- 1. INICIALIZACIÓN DE GRÁFICAS ---
 function initCharts() {
     const getOptions = (yTitle, isTime = true) => ({
         responsive: true,
@@ -26,59 +27,37 @@ function initCharts() {
                 grid: { drawOnChartArea: false }
             }
         },
-        plugins: { zoom: { zoom: { wheel: { enabled: false }, drag: { enabled: true }, mode: 'x' }, pan: { enabled: true, mode: 'x' } } }
+        plugins: { 
+            zoom: { 
+                zoom: { wheel: { enabled: false }, drag: { enabled: true }, mode: 'x' }, 
+                pan: { enabled: true, mode: 'x' } 
+            },
+            legend: { labels: { font: { size: 12 } } }
+        }
     });
 
+    // Gráficas de Temperatura
     chart1 = new Chart(document.getElementById('chart1').getContext('2d'), { type: 'line', data: { datasets: [] }, options: getOptions('Temp (°C)') });
     chart2 = new Chart(document.getElementById('chart2').getContext('2d'), { type: 'line', data: { datasets: [] }, options: getOptions('Temp (°C)') });
     chart3 = new Chart(document.getElementById('chart3').getContext('2d'), { type: 'line', data: { datasets: [] }, options: getOptions('Temp (°C)') });
 
-    chartVibraciones = new Chart(document.getElementById('chartVibraciones').getContext('2d'), { 
-        type: 'line', 
-        data: { datasets: [{ label: 'Piezo', data: [], borderColor: '#e74c3c', borderWidth: 1, pointRadius: 0 }] }, 
-        options: { ...getOptions('Amplitud', false), animation: false, parsing: false, normalized: true } 
+    // NUEVAS Gráficas Piezoeléctricas
+    chartVibTotal = new Chart(document.getElementById('chartVibTotal').getContext('2d'), {
+        type: 'line',
+        data: { datasets: [] },
+        options: { ...getOptions('Amplitud', false), animation: false, parsing: false, normalized: true }
+    });
+
+    chartVibPolar = new Chart(document.getElementById('chartVibPolar').getContext('2d'), {
+        type: 'line',
+        data: { datasets: [] },
+        options: { ...getOptions('Amplitud Separada', false), animation: false, parsing: false, normalized: true }
     });
 
     chartModal = new Chart(document.getElementById('chartModal').getContext('2d'), { type: 'line', data: { datasets: [] }, options: getOptions('Valores') });
 }
 
-// --- CLONACIÓN PARA VENTANA EMERGENTE ---
-// --- FUNCIÓN DE CLONACIÓN CORREGIDA PARA PIEZOELÉCTRICO Y TEMPERATURA ---
-function abrirMaxivisor(chartOrigen, titulo) {
-    const modal = document.getElementById('modal-visor');
-    modal.style.display = 'block';
-    document.getElementById('titulo-visor').textContent = titulo;
-
-    // Detectamos si el origen es de tiempo (Estaciones) o lineal (Piezoeléctrico)
-    const esTiempo = chartOrigen.options.scales.x.type === 'time';
-    
-    // Configuramos el eje X del modal igual que el original
-    chartModal.options.scales.x.type = chartOrigen.options.scales.x.type;
-    
-    // Ajustamos los títulos de los ejes en el modal para que coincidan
-    chartModal.options.scales.x.title.text = chartOrigen.options.scales.x.title.text;
-    chartModal.options.scales.y.title.text = chartOrigen.options.scales.y.title.text;
-
-    // Clonación inteligente de los datos
-    chartModal.data.datasets = chartOrigen.data.datasets.map(ds => {
-        return {
-            ...ds,
-            // Si es tiempo, convertimos a objeto Date. Si es lineal, pasamos el número tal cual.
-            data: ds.data.map(p => ({
-                x: esTiempo ? new Date(p.x) : p.x, 
-                y: p.y
-            }))
-        };
-    });
-
-    // Pequeño retardo para asegurar que el canvas del modal se ha redimensionado
-    setTimeout(() => {
-        chartModal.resetZoom();
-        chartModal.update('none');
-    }, 100);
-}
-
-// --- ACTUALIZACIÓN DE DATOS ---
+// --- 2. ACTUALIZACIÓN TEMPERATURAS REAL-TIME ---
 async function updateData() {
     try {
         const res = await fetch('/api/history');
@@ -113,14 +92,7 @@ async function updateData() {
     } catch (e) { console.error(e); }
 }
 
-function moveChart(chart, offset) {
-    const scale = chart.scales.x;
-    const range = scale.max - scale.min;
-    chart.options.scales.x.min = scale.min + (range * offset);
-    chart.options.scales.x.max = scale.max + (range * offset);
-    chart.update('none');
-}
-
+// --- 3. LÓGICA PIEZOELÉCTRICO (3 SENSORES) ---
 async function actualizarListaVibraciones() {
     try {
         const res = await fetch('/api/vibrations/list');
@@ -135,18 +107,96 @@ async function cargarVibracionHistorica() {
     const id = document.getElementById('select-vibraciones').value;
     const res = await fetch(`/api/vibrations/get/${id}`);
     const data = await res.json();
-    if (data && data.values) {
-        chartVibraciones.data.datasets[0].data = data.values.map((y, i) => ({ x: i * 0.2, y: y }));
-        chartVibraciones.update('none');
+    
+    if (data && data.v1 && data.v2 && data.v3) {
+        const tStep = 0.2; // 5000Hz = 0.2ms entre puntos
+
+        // GRÁFICA 1: AMPLITUD TOTAL
+        chartVibTotal.data.datasets = [
+            { label: 'Sensor 1', data: data.v1.map((y, i) => ({x: i*tStep, y: y})), borderColor: '#e74c3c', borderWidth: 1, pointRadius: 0 },
+            { label: 'Sensor 2', data: data.v2.map((y, i) => ({x: i*tStep, y: y})), borderColor: '#2ecc71', borderWidth: 1, pointRadius: 0 },
+            { label: 'Sensor 3', data: data.v3.map((y, i) => ({x: i*tStep, y: y})), borderColor: '#3498db', borderWidth: 1, pointRadius: 0 }
+        ];
+
+        // GRÁFICA 2: POSITIVO / NEGATIVO
+        chartVibPolar.data.datasets = [];
+        const colores = ['#e74c3c', '#2ecc71', '#3498db'];
+        const señales = [data.v1, data.v2, data.v3];
+
+        señales.forEach((v, idx) => {
+            // Parte Positiva
+            chartVibPolar.data.datasets.push({
+                label: `S${idx+1} (+)`,
+                data: v.map((y, i) => ({x: i*tStep, y: y > 0 ? y : 0})),
+                borderColor: colores[idx], borderWidth: 1, pointRadius: 0
+            });
+            // Parte Negativa (con línea discontinua)
+            chartVibPolar.data.datasets.push({
+                label: `S${idx+1} (-)`,
+                data: v.map((y, i) => ({x: i*tStep, y: y < 0 ? y : 0})),
+                borderColor: colores[idx], borderDash: [5, 5], borderWidth: 1, pointRadius: 0
+            });
+        });
+
+        chartVibTotal.update('none');
+        chartVibPolar.update('none');
     }
+}
+
+// --- 4. MAXIVISOR Y DESCARGAS ---
+function abrirMaxivisor(chartOrigen, titulo) {
+    document.getElementById('modal-visor').style.display = 'block';
+    document.getElementById('titulo-visor').textContent = titulo;
+
+    const esTiempo = chartOrigen.options.scales.x.type === 'time';
+    chartModal.options.scales.x.type = chartOrigen.options.scales.x.type;
+
+    chartModal.data = JSON.parse(JSON.stringify(chartOrigen.data));
+    if(esTiempo) {
+        chartModal.data.datasets.forEach(ds => { ds.data.forEach(p => p.x = new Date(p.x)); });
+    }
+    
+    setTimeout(() => {
+        chartModal.resetZoom();
+        chartModal.update('none');
+    }, 100);
+}
+
+function moveChart(chart, offset) {
+    const scale = chart.scales.x;
+    const range = scale.max - scale.min;
+    chart.options.scales.x.min = scale.min + (range * offset);
+    chart.options.scales.x.max = scale.max + (range * offset);
+    chart.update('none');
 }
 
 function descargarImagen(chart, nombre) {
     const link = document.createElement('a');
-    link.download = `${nombre}.png`;
+    link.download = `${nombre}_${new Date().getTime()}.png`;
     link.href = chart.toBase64Image();
     link.click();
 }
 
-function cerrarVisor() { document.getElementById('modal-visor').style.display = 'none'; }
+function descargarCSVVibracion() {
+    const datasets = chartVibTotal.data.datasets;
+    if (!datasets.length) return alert("Carga una muestra primero");
+    
+    let csv = "Tiempo (ms),Sensor 1,Sensor 2,Sensor 3\n";
+    const len = datasets[0].data.length;
+    
+    for(let i=0; i<len; i++) {
+        const t = datasets[0].data[i].x;
+        const s1 = datasets[0].data[i].y;
+        const s2 = datasets[1].data[i].y;
+        const s3 = datasets[2].data[i].y;
+        csv += `${t},${s1},${s2},${s3}\n`;
+    }
 
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Captura_Triaxial_${new Date().getTime()}.csv`;
+    link.click();
+}
+
+function cerrarVisor() { document.getElementById('modal-visor').style.display = 'none'; }
