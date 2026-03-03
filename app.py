@@ -7,7 +7,7 @@ import io
 
 app = Flask(__name__)
 
-# Configuración de límite de subida (10MB) para soportar los bloques de vibración
+# Configuración de límite de subida (10MB) para no bloquear los JSON grandes de vibración
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024 
 
 # --- CONFIGURACIÓN DE FIREBASE ---
@@ -26,7 +26,7 @@ def safe_float(value):
 def index():
     return render_template('index.html')
 
-# --- API: TEMPERATURAS Y HUMEDAD ---
+# --- API: RECEPCIÓN DE TEMPERATURAS (ESP32 LoRa) ---
 @app.route('/api/data', methods=['POST'])
 def receive_data():
     try:
@@ -50,6 +50,7 @@ def receive_data():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+# --- API: HISTORIAL DE TEMPERATURAS ---
 @app.route('/api/history')
 def get_history():
     try:
@@ -61,15 +62,15 @@ def get_history():
     except:
         return jsonify([]), 500
 
-# --- DESCARGA CSV TEMPERATURAS (ÚLTIMOS 30 DÍAS) ---
+# --- DESCARGA CSV TEMPERATURAS (FILTRADO 30 DÍAS) ---
 @app.route('/api/download_csv')
 def download_csv():
     try:
         response = requests.get(FIREBASE_TEMPS_URL, timeout=15)
         fb_data = response.json()
-        if not fb_data: return "No hay datos disponibles", 404
+        if not fb_data: return "No hay datos", 404
         
-        # Calcular el límite de tiempo (30 días atrás desde hoy)
+        # Filtro temporal: 30 días atrás
         limite_30_dias = datetime.utcnow() - timedelta(days=30)
         
         output = io.StringIO()
@@ -81,15 +82,13 @@ def download_csv():
 
         for item in items:
             if not item or 'timestamp' not in item: continue
-            # Convertir timestamp ISO a objeto datetime para comparar
             try:
-                fecha_str = item['timestamp'].replace('Z', '')
-                fecha_item = datetime.fromisoformat(fecha_str)
+                # Limpiar 'Z' y convertir a datetime para comparar
+                fecha_item = datetime.fromisoformat(item['timestamp'].replace('Z', ''))
                 if fecha_item > limite_30_dias:
                     items_filtrados.append(item)
             except: continue
         
-        # Ordenar por fecha
         items_filtrados.sort(key=lambda x: x.get('timestamp', ''))
 
         for item in items_filtrados:
@@ -101,49 +100,53 @@ def download_csv():
             ])
             
         res = make_response(output.getvalue())
-        # Nombre del archivo solicitado: Historico_30dias
         res.headers["Content-Disposition"] = f"attachment; filename=Historico_30dias_{datetime.now().strftime('%Y%m%d')}.csv"
         res.headers["Content-type"] = "text/csv"
         return res
     except Exception as e:
-        return f"Error generando CSV: {str(e)}", 500
+        return f"Error: {str(e)}", 500
 
-# --- API: VIBRACIONES (FRAGMENTADAS) ---
+# --- API: VIBRACIONES (SISTEMA DE PAQUETES/BLOQUES) ---
 @app.route('/api/vibrations', methods=['POST'])
 def post_vibration():
     try:
         data = request.get_json(force=True, silent=True)
         if not data: return jsonify({"status": "error"}), 400
 
-        capture_id = data.get('id')
+        capture_id = data.get('id')      # Ej: Cap_171500
         new_values = data.get('values', [])
+        
         target_url = f"{FIREBASE_VIB_URL}/{capture_id}.json"
 
-        # Lógica de unión de bloques (PATCH si existe, PUT si es nuevo)
-        current_data = requests.get(target_url).json()
-        if current_data and "values" in current_data:
-            combined_values = current_data["values"]
-            combined_values.extend(new_values)
-            update_res = requests.patch(target_url, json={"values": combined_values}, timeout=30)
+        # 1. Comprobar si ya existe la captura para añadir (patch) o crear (put)
+        current_res = requests.get(target_url).json()
+
+        if current_res and "values" in current_res:
+            # Unir el nuevo bloque de 5,000 puntos al existente
+            current_values = current_res["values"]
+            current_values.extend(new_values)
+            requests.patch(target_url, json={"values": current_values}, timeout=30)
         else:
+            # Crear registro nuevo con el primer bloque
             payload = {
                 "timestamp": datetime.utcnow().isoformat() + "Z",
-                "device_id": data.get('device', 'Sensor_4G_Vib'),
+                "device_id": data.get('device', 'ESP32_4G_Sismo'),
                 "values": new_values
             }
-            update_res = requests.put(target_url, json=payload, timeout=30)
+            requests.put(target_url, json=payload, timeout=30)
 
         return jsonify({"status": "success"}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+# --- API: LISTAR Y OBTENER VIBRACIONES ---
 @app.route('/api/vibrations/list')
 def list_vibrations():
     try:
         res = requests.get(f"{FIREBASE_VIB_URL}.json", timeout=15).json()
         if not res: return jsonify([])
         lista = [{"id": k, "fecha": v.get('timestamp'), "device": v.get('device_id')} for k, v in res.items() if v]
-        return jsonify(lista[::-1])
+        return jsonify(lista[::-1]) # De más reciente a más antigua
     except:
         return jsonify([])
 
@@ -152,8 +155,8 @@ def get_vibration_detail(id):
     try:
         res = requests.get(f"{FIREBASE_VIB_URL}/{id}.json", timeout=25).json()
         return jsonify(res)
-    except:
-        return jsonify({"status": "error"}), 500
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
