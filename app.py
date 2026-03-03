@@ -2,11 +2,11 @@ from flask import Flask, request, jsonify, render_template, make_response
 from datetime import datetime, timedelta
 import os, requests, csv, io
 
-# 1. Inicialización de la App (DEBE IR AQUÍ ARRIBA)
+# 1. Inicialización de la App (DEBE IR AQUÍ ARRIBA para Render)
 app = Flask(__name__)
 
-# Aumentamos el límite de memoria para los 3 sensores (aprox 75,000 puntos)
-app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024 
+# Aumentamos el límite de memoria para los 3 sensores (aprox 75,000 puntos en total)
+app.config['MAX_CONTENT_LENGTH'] = 25 * 1024 * 1024 
 
 # --- CONFIGURACIÓN DE FIREBASE ---
 FIREBASE_TEMPS_URL = "https://tfg2026-511e7-default-rtdb.europe-west1.firebasedatabase.app/readings.json"
@@ -81,25 +81,30 @@ def post_vibration():
         url = f"{FIREBASE_VIB_URL}/{id_cap}.json"
         curr = requests.get(url).json()
         
-        # Nuevos bloques de los 3 canales
+        # Nuevos bloques de los 3 canales recibidos del ESP32
         v1 = data.get('v1', [])
         v2 = data.get('v2', [])
         v3 = data.get('v3', [])
 
+        # Preparamos el payload base con metadatos actualizados
+        # Actualizar el timestamp en cada bloque es vital para que el Dashboard detecte cambios
+        payload = {
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "device_id": data.get('device', 'ESP32_Triaxial')
+        }
+
         if curr and "v1" in curr:
-            # Unión de bloques existentes
-            requests.patch(url, json={
-                "v1": curr.get("v1", []) + v1,
-                "v2": curr.get("v2", []) + v2,
-                "v3": curr.get("v3", []) + v3
-            }, timeout=30)
+            # Si la captura ya existe, unimos los nuevos bloques a los anteriores
+            payload["v1"] = curr.get("v1", []) + v1
+            payload["v2"] = curr.get("v2", []) + v2
+            payload["v3"] = curr.get("v3", []) + v3
+            # Usamos patch para actualizar solo los campos necesarios
+            requests.patch(url, json=payload, timeout=30)
         else:
-            # Creación de nueva captura
-            payload = {
-                "timestamp": datetime.utcnow().isoformat() + "Z",
-                "device_id": data.get('device', 'ESP32_Triaxial'),
-                "v1": v1, "v2": v2, "v3": v3
-            }
+            # Si es la primera parte de la captura, creamos el registro completo
+            payload["v1"] = v1
+            payload["v2"] = v2
+            payload["v3"] = v3
             requests.put(url, json=payload, timeout=30)
 
         return jsonify({"status": "success"}), 200
@@ -111,6 +116,7 @@ def list_vibrations():
     try:
         res = requests.get(f"{FIREBASE_VIB_URL}.json", timeout=10).json()
         if not res: return jsonify([])
+        # Listamos capturas válidas ordenadas por fecha (descendente)
         return jsonify([{"id": k, "fecha": v.get('timestamp')} for k, v in res.items() if v and isinstance(v, dict)][::-1])
     except:
         return jsonify([])
@@ -123,7 +129,7 @@ def get_vibration_detail(id):
     except:
         return jsonify({"status": "error"}), 500
 
-# Lanzamiento para Render
+# Lanzamiento adaptado para el puerto de Render
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
