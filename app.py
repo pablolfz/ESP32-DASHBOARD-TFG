@@ -6,7 +6,6 @@ import os, requests, csv, io
 app = Flask(__name__)
 
 # Aumentamos el límite de memoria para los 3 sensores (aprox 75,000 puntos en total)
-# 25MB es suficiente para el JSON de alta frecuencia
 app.config['MAX_CONTENT_LENGTH'] = 25 * 1024 * 1024 
 
 # --- CONFIGURACIÓN DE FIREBASE ---
@@ -42,13 +41,11 @@ def get_history():
     try:
         res = requests.get(FIREBASE_TEMPS_URL, timeout=10).json()
         if not res: return jsonify([])
-        # Normalizamos la respuesta de Firebase (que puede ser dict o list)
         items = list(res.values()) if isinstance(res, dict) else [x for x in res if x is not None]
         return jsonify(items)
     except:
         return jsonify([])
 
-# --- DESCARGA CSV 30 DÍAS ---
 @app.route('/api/download_csv')
 def download_csv():
     try:
@@ -83,22 +80,22 @@ def post_vibration():
         if not id_cap: return jsonify({"status": "error", "message": "No ID"}), 400
         
         url = f"{FIREBASE_VIB_URL}/{id_cap}.json"
-        # Consultamos el estado actual de la captura en la base de datos
         curr = requests.get(url).json()
         
-        # Extraemos nuevos datos (soportando tanto v1 como el antiguo ch1 del ESP32)
+        # Soporte para v1/v2/v3 (nuevo) o ch1/ch2/ch3 (antiguo)
         v1_new = data.get('v1') or data.get('ch1') or []
         v2_new = data.get('v2') or data.get('ch2') or []
         v3_new = data.get('v3') or data.get('ch3') or []
 
-        # Estructura base para guardar
+        # Log para depuración en Render
+        print(f">> Recibido bloque para {id_cap}: v1={len(v1_new)}, v2={len(v2_new)}, v3={len(v3_new)} puntos.")
+
         payload = {
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "device_id": data.get('device', 'ESP32_Triaxial')
         }
 
         if curr and isinstance(curr, dict):
-            # Si ya existe, fusionamos las listas antiguas con las nuevas
             v1_old = curr.get("v1") or curr.get("ch1") or []
             v2_old = curr.get("v2") or curr.get("ch2") or []
             v3_old = curr.get("v3") or curr.get("ch3") or []
@@ -107,10 +104,8 @@ def post_vibration():
             payload["v2"] = v2_old + v2_new
             payload["v3"] = v3_old + v3_new
             
-            # Usamos PUT para limpiar claves antiguas (como ch1) y dejar solo v1, v2, v3
             requests.put(url, json=payload, timeout=30)
         else:
-            # Nueva captura: guardamos directamente
             payload["v1"] = v1_new
             payload["v2"] = v2_new
             payload["v3"] = v3_new
@@ -131,11 +126,9 @@ def list_vibrations():
         if isinstance(res, dict):
             for k, v in res.items():
                 if v and isinstance(v, dict):
-                    # Forzamos una fecha válida para que el JS no falle al listar
                     fecha = v.get('timestamp') or datetime.utcnow().isoformat() + "Z"
                     lista.append({"id": k, "fecha": fecha})
         
-        # Ordenamos: la captura más reciente aparece primero
         lista.sort(key=lambda x: x['fecha'], reverse=True)
         return jsonify(lista)
     except:
@@ -150,14 +143,12 @@ def get_vibration_detail(id):
         if not res:
             return jsonify({"error": "Muestra no encontrada"}), 404
             
-        # Normalización CRÍTICA para que el Dashboard visualice los datos:
-        # Si Firebase devolvió datos con nombres antiguos (ch1), los renombramos a v1
         if isinstance(res, dict):
+            # Normalización para el frontend
             if 'ch1' in res and 'v1' not in res: res['v1'] = res.pop('ch1')
             if 'ch2' in res and 'v2' not in res: res['v2'] = res.pop('ch2')
             if 'ch3' in res and 'v3' not in res: res['v3'] = res.pop('ch3')
             
-            # Aseguramos que v1, v2, v3 existan como listas para evitar errores en JS
             for key in ['v1', 'v2', 'v3']:
                 if key not in res: res[key] = []
             
@@ -167,6 +158,5 @@ def get_vibration_detail(id):
         return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == '__main__':
-    # El puerto lo asigna Render dinámicamente
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
