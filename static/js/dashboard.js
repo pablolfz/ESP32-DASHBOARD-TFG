@@ -43,22 +43,35 @@ function initCharts() {
 }
 
 // --- CLONACIÓN PARA VENTANA EMERGENTE ---
+// --- FUNCIÓN DE CLONACIÓN CORREGIDA PARA PIEZOELÉCTRICO Y TEMPERATURA ---
 function abrirMaxivisor(chartOrigen, titulo) {
-    document.getElementById('modal-visor').style.display = 'block';
+    const modal = document.getElementById('modal-visor');
+    modal.style.display = 'block';
     document.getElementById('titulo-visor').textContent = titulo;
 
+    // Detectamos si el origen es de tiempo (Estaciones) o lineal (Piezoeléctrico)
     const esTiempo = chartOrigen.options.scales.x.type === 'time';
+    
+    // Configuramos el eje X del modal igual que el original
     chartModal.options.scales.x.type = chartOrigen.options.scales.x.type;
+    
+    // Ajustamos los títulos de los ejes en el modal para que coincidan
+    chartModal.options.scales.x.title.text = chartOrigen.options.scales.x.title.text;
+    chartModal.options.scales.y.title.text = chartOrigen.options.scales.y.title.text;
 
-    // Copiamos los datos asegurando que las fechas vuelvan a ser objetos Date
-    chartModal.data.datasets = chartOrigen.data.datasets.map(ds => ({
-        ...ds,
-        data: ds.data.map(p => ({
-            x: esTiempo ? new Date(p.x) : p.x,
-            y: p.y
-        }))
-    }));
+    // Clonación inteligente de los datos
+    chartModal.data.datasets = chartOrigen.data.datasets.map(ds => {
+        return {
+            ...ds,
+            // Si es tiempo, convertimos a objeto Date. Si es lineal, pasamos el número tal cual.
+            data: ds.data.map(p => ({
+                x: esTiempo ? new Date(p.x) : p.x, 
+                y: p.y
+            }))
+        };
+    });
 
+    // Pequeño retardo para asegurar que el canvas del modal se ha redimensionado
     setTimeout(() => {
         chartModal.resetZoom();
         chartModal.update('none');
@@ -136,3 +149,4 @@ function descargarImagen(chart, nombre) {
 }
 
 function cerrarVisor() { document.getElementById('modal-visor').style.display = 'none'; }
+
