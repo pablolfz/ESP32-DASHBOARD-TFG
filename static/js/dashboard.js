@@ -9,7 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function initCharts() {
     const getOptions = (yTitle, isTime = true) => ({
-        responsive: true, maintainAspectRatio: false,
+        responsive: true,
+        maintainAspectRatio: false,
         scales: {
             x: { 
                 type: isTime ? 'time' : 'linear',
@@ -25,7 +26,12 @@ function initCharts() {
                 grid: { drawOnChartArea: false }
             }
         },
-        plugins: { zoom: { zoom: { wheel: { enabled: false }, drag: { enabled: true }, mode: 'x' }, pan: { enabled: true, mode: 'x' } } }
+        plugins: { 
+            zoom: { 
+                zoom: { wheel: { enabled: false }, drag: { enabled: true }, mode: 'x' }, 
+                pan: { enabled: true, mode: 'x' } 
+            } 
+        }
     });
 
     chart1 = new Chart(document.getElementById('chart1').getContext('2d'), { type: 'line', data: { datasets: [] }, options: getOptions('Temp (°C)') });
@@ -33,11 +39,41 @@ function initCharts() {
     chart3 = new Chart(document.getElementById('chart3').getContext('2d'), { type: 'line', data: { datasets: [] }, options: getOptions('Temp (°C)') });
 
     chartVibraciones = new Chart(document.getElementById('chartVibraciones').getContext('2d'), { 
-        type: 'line', data: { datasets: [{ label: 'Piezo', data: [], borderColor: '#e74c3c', borderWidth: 1, pointRadius: 0 }] }, 
+        type: 'line', 
+        data: { datasets: [{ label: 'Piezo', data: [], borderColor: '#e74c3c', borderWidth: 1, pointRadius: 0 }] }, 
         options: { ...getOptions('Amplitud', false), animation: false, parsing: false, normalized: true } 
     });
 
+    // Gráfica del Modal
     chartModal = new Chart(document.getElementById('chartModal').getContext('2d'), { type: 'line', data: { datasets: [] }, options: getOptions('Valores') });
+}
+
+// --- FUNCIÓN CORREGIDA: MAXIVISOR ESTÁTICO ---
+function abrirMaxivisor(chartOrigen, titulo) {
+    const modal = document.getElementById('modal-visor');
+    modal.style.display = 'block';
+    document.getElementById('titulo-visor').textContent = titulo;
+
+    // Detectar si la gráfica de origen es de tiempo o lineal
+    const esTiempo = chartOrigen.options.scales.x.type === 'time';
+    chartModal.options.scales.x.type = chartOrigen.options.scales.x.type;
+
+    // Clonar datasets manualmente para asegurar que los objetos Date se mantengan
+    chartModal.data.datasets = chartOrigen.data.datasets.map(ds => {
+        return {
+            ...ds,
+            data: ds.data.map(p => {
+                // Si es de tiempo, nos aseguramos de que el eje X sea un objeto Date
+                return { x: esTiempo ? new Date(p.x) : p.x, y: p.y };
+            })
+        };
+    });
+
+    // Resetear zoom y actualizar
+    setTimeout(() => {
+        chartModal.resetZoom();
+        chartModal.update('none');
+    }, 50);
 }
 
 async function updateData() {
@@ -54,12 +90,14 @@ async function updateData() {
             const filtered = data.filter(i => String(i.device_id).includes(num.toString())).sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
             if (filtered.length > 0) {
                 const d = filtered[filtered.length - 1];
-                const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val ? val.toFixed(1) : "--"; };
                 
+                // Actualizar Recuadros
+                const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val ? val.toFixed(1) : "--"; };
                 set(`d${num}-t`, d.t_aht); set(`d${num}-h`, d.h_aht);
                 set(`d${num}-s1`, d.t1); set(`d${num}-s2`, d.t2); set(`d${num}-s3`, d.t3); set(`d${num}-s4`, d.t4);
                 if(document.getElementById(`d${num}-rssi`)) document.getElementById(`d${num}-rssi`).textContent = d.rssi || "--";
 
+                // Gráficas (6 líneas)
                 const cObj = charts[num-1];
                 cObj.data.datasets = [
                     { label: 'Ambiente', data: filtered.map(i => ({x: new Date(i.timestamp), y: i.t_aht})), borderColor: '#f1c40f', yAxisID: 'y' },
@@ -75,19 +113,7 @@ async function updateData() {
     } catch (e) { console.error(e); }
 }
 
-function abrirMaxivisor(chartOrigen, titulo) {
-    document.getElementById('modal-visor').style.display = 'block';
-    document.getElementById('titulo-visor').textContent = titulo;
-    chartModal.data = JSON.parse(JSON.stringify(chartOrigen.data));
-    chartModal.options.scales.x.type = chartOrigen.options.scales.x.type;
-    // Restaurar objetos Date si es escala de tiempo
-    if(chartModal.options.scales.x.type === 'time') {
-        chartModal.data.datasets.forEach(ds => { ds.data.forEach(p => p.x = new Date(p.x)); });
-    }
-    chartModal.resetZoom();
-    chartModal.update('none');
-}
-
+// Funciones de control manual
 function moveChart(chart, offset) {
     const scale = chart.scales.x;
     const range = scale.max - scale.min;
@@ -96,6 +122,15 @@ function moveChart(chart, offset) {
     chart.update('none');
 }
 
+function resetZoomGlobal(key) {
+    if(key === 'chart1') chart1.resetZoom();
+    if(key === 'chart2') chart2.resetZoom();
+    if(key === 'chart3') chart3.resetZoom();
+    if(key === 'vib') chartVibraciones.resetZoom();
+    if(key === 'modal') chartModal.resetZoom();
+}
+
+// Vibraciones e Historial
 async function actualizarListaVibraciones() {
     try {
         const res = await fetch('/api/vibrations/list');
@@ -120,15 +155,6 @@ function descargarImagen(chart, nombre) {
     const link = document.createElement('a');
     link.download = `${nombre}_${new Date().getTime()}.png`;
     link.href = chart.toBase64Image();
-    link.click();
-}
-
-function descargarCSVVibracion() {
-    const data = chartVibraciones.data.datasets[0].data;
-    let csv = "Tiempo (ms),Amplitud\n" + data.map(p => `${p.x},${p.y}`).join("\n");
-    const link = document.createElement("a");
-    link.href = 'data:text/csv;charset=utf-8,' + encodeURI(csv);
-    link.download = `Vibracion_${new Date().getTime()}.csv`;
     link.click();
 }
 
