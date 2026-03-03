@@ -3,147 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Estación LoRa UGR</title>
+    <title>Dashboard Sísmico 4G - TFG</title>
     <link rel="stylesheet" href="/static/css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
 </head>
 <body>
-    <header class="header">
-        <div class="header-content">
-            <div class="header-left">
-                <div class="logos-container">
-                    <img src="/static/images/logo_ugr1.png" alt="UGR" class="header-logo">
-                    <img src="/static/images/logo-grupo-labic.png" alt="LABIC" class="header-logo labic-logo">
-                </div>
-                <span class="header-title">Estación LoRa</span>
-            </div>
-            <nav class="nav">
-                <a href="#" class="nav-link">Temperaturas</a>
-                <a href="#seccion-vibraciones" class="nav-link">Vibraciones</a>
-                <a href="/api/download_csv" class="btn-csv"><i class="fa-solid fa-file-csv"></i> CSV Temps</a>
-            </nav>
-        </div>
+    <header>
+        <h1>Monitorización de Vibraciones Ferroviarias</h1>
+        <p id="currentTime">Sincronizando con estación...</p>
     </header>
 
-    <div class="container">
-        <h1 class="main-title">Estado del Sistema (Tiempo Real)</h1>
-        <p class="last-update" id="currentTime">Sincronizando con Firebase...</p>
-
-        <div class="current-data-grid">
-            <div class="data-box" id="box-env">
-                <h3>Ambiente (AHT20) <i class="fa-solid fa-cloud-sun"></i></h3>
-                <div class="env-table">
-                    <div class="env-row header-row"><span>ID</span><span>Temp.</span><span>Hum.</span></div>
-                    <div class="env-row"><span>E1</span><b id="d1-t">--</b><b id="d1-h">--</b></div>
-                    <div class="env-row"><span>E2</span><b id="d2-t">--</b><b id="d2-h">--</b></div>
-                    <div class="env-row"><span>E3</span><b id="d3-t">--</b><b id="d3-h">--</b></div>
+    <main class="container">
+        <section class="grid">
+            <div class="card">
+                <h3>Estación 1 - Vías</h3>
+                <div class="data-summary">
+                    <span id="d1-t">--°</span> | <span id="d1-h">--%</span> | <span id="d1-rssi">-- dBm</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chart1"></canvas>
                 </div>
             </div>
-
-            <div class="data-box" id="box-dev1">
-                <h3>Sondas E1 <i class="fa-solid fa-temperature-half"></i></h3>
-                <div class="data-value-small"><span>S1:</span> <b id="d1-s1">--</b></div>
-                <div class="data-value-small"><span>S2:</span> <b id="d1-s2">--</b></div>
-                <div class="data-value-small"><span>S3:</span> <b id="d1-s3">--</b></div>
-                <div class="data-value-small"><span>S4:</span> <b id="d1-s4">--</b></div>
-            </div>
-
-            <div class="data-box" id="box-dev2">
-                <h3>Sondas E2 <i class="fa-solid fa-temperature-half"></i></h3>
-                <div class="data-value-small"><span>S1:</span> <b id="d2-s1">--</b></div>
-                <div class="data-value-small"><span>S2:</span> <b id="d2-s2">--</b></div>
-                <div class="data-value-small"><span>S3:</span> <b id="d2-s3">--</b></div>
-                <div class="data-value-small"><span>S4:</span> <b id="d2-s4">--</b></div>
-            </div>
-
-            <div class="data-box" id="box-dev3">
-                <h3>Sondas E3 <i class="fa-solid fa-temperature-half"></i></h3>
-                <div class="data-value-small"><span>S1:</span> <b id="d3-s1">--</b></div>
-                <div class="data-value-small"><span>S2:</span> <b id="d3-s2">--</b></div>
-                <div class="data-value-small"><span>S3:</span> <b id="d3-s3">--</b></div>
-                <div class="data-value-small"><span>S4:</span> <b id="d3-s4">--</b></div>
-            </div>
-
-            <div class="data-box" id="box-signal">
-                <h3>Señal (RSSI) <i class="fa-solid fa-signal"></i></h3>
-                <div class="data-value-small"><span>E1:</span> <b id="d1-rssi">--</b></div>
-                <div class="data-value-small"><span>E2:</span> <b id="d2-rssi">--</b></div>
-                <div class="data-value-small"><span>E3:</span> <b id="d3-rssi">--</b></div>
-            </div>
-        </div>
-
-        <div class="charts-grid">
-            <div class="chart-container">
-                <h2>Historial Estación 1</h2>
-                <div class="chart-toolbar">
-                    <button onclick="chart1.resetZoom(); resetUserLimit('chart1');"><i class="fa-solid fa-house"></i></button>
-                    <button onclick="moveChart(chart1, -0.2)"><i class="fa-solid fa-arrow-left"></i></button>
-                    <button onclick="moveChart(chart1, 0.2)"><i class="fa-solid fa-arrow-right"></i></button>
+            <div class="card">
+                <h3>Estación 2 - Estructura</h3>
+                <div class="data-summary">
+                    <span id="d2-t">--°</span> | <span id="d2-h">--%</span> | <span id="d2-rssi">-- dBm</span>
                 </div>
-                <div class="canvas-wrapper"><canvas id="chart1"></canvas></div>
-            </div>
-
-            <div class="chart-container">
-                <h2>Historial Estación 2</h2>
-                <div class="chart-toolbar">
-                    <button onclick="chart2.resetZoom(); resetUserLimit('chart2');"><i class="fa-solid fa-house"></i></button>
-                    <button onclick="moveChart(chart2, -0.2)"><i class="fa-solid fa-arrow-left"></i></button>
-                    <button onclick="moveChart(chart2, 0.2)"><i class="fa-solid fa-arrow-right"></i></button>
+                <div class="chart-container">
+                    <canvas id="chart2"></canvas>
                 </div>
-                <div class="canvas-wrapper"><canvas id="chart2"></canvas></div>
             </div>
+        </section>
 
-            <div class="chart-container">
-                <h2>Historial Estación 3</h2>
-                <div class="chart-toolbar">
-                    <button onclick="chart3.resetZoom(); resetUserLimit('chart3');"><i class="fa-solid fa-house"></i></button>
-                    <button onclick="moveChart(chart3, -0.2)"><i class="fa-solid fa-arrow-left"></i></button>
-                    <button onclick="moveChart(chart3, 0.2)"><i class="fa-solid fa-arrow-right"></i></button>
-                </div>
-                <div class="canvas-wrapper"><canvas id="chart3"></canvas></div>
-            </div>
-        </div>
-
-        <div id="seccion-vibraciones" style="margin-top: 50px;">
-            <h1 class="main-title">Análisis de Vibraciones (Piezoeléctrico)</h1>
-            <div class="chart-container">
-                <div class="chart-toolbar">
-                    <button onclick="chartVibraciones.resetZoom()"><i class="fa-solid fa-house"></i></button>
-                    <button onclick="descargarCSVVibraciones()" class="btn-csv" style="background:#e74c3c!important">
-                        <i class="fa-solid fa-file-arrow-down"></i> Descargar CSV Captura
-                    </button>
-                    <span style="margin-left:15px; font-weight:bold; color:#7f8c8d">5.000 Hz | 5 Segundos (25.000 puntos)</span>
-                </div>
-                <div class="canvas-wrapper" style="height: 500px;"><canvas id="chartVibraciones"></canvas></div>
-            </div>
-
-            <div class="data-box" style="border-top: 5px solid #e74c3c; margin-top:20px;">
-                <h3>Historial de Capturas de Vibración</h3>
-                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
-                    <select id="select-vibraciones" style="padding:10px; border-radius:5px; border:1px solid #ccc; flex-grow:1; font-family:inherit;">
-                        <option>Cargando lista...</option>
+        <section class="card wide">
+            <div class="header-vib">
+                <h3>Análisis Sísmico (Captura 25,000 pts)</h3>
+                <div class="selector">
+                    <select id="select-vibraciones" onchange="cargarVibracionHistorica()">
+                        <option>Cargando capturas...</option>
                     </select>
-                    <button onclick="cargarVibracionHistorica()" class="btn-csv" style="background:#34495e!important">Ver Captura Seleccionada</button>
                 </div>
             </div>
-        </div>
-    </div>
+            
+            <div class="chart-container-large">
+                <canvas id="chartVibraciones"></canvas>
+            </div>
+
+            <div class="controles-grafica">
+                <button class="btn-ctrl" onclick="controlGrafica('left')">◀ Izquierda</button>
+                <button class="btn-ctrl" onclick="controlGrafica('in')">➕ Zoom In</button>
+                <button class="btn-ctrl" onclick="controlGrafica('out')">➖ Zoom Out</button>
+                <button class="btn-ctrl" onclick="controlGrafica('right')">Derecha ▶</button>
+                <button class="btn-ctrl" onclick="controlGrafica('reset')">🔄 Reset</button>
+            </div>
+        </section>
+    </main>
 
     <div id="modal-visor" class="modal">
-        <span class="close-modal" onclick="cerrarVisor()">&times;</span>
         <div class="modal-content">
-            <div class="chart-toolbar">
-                <button onclick="chartModal.resetZoom(); resetUserLimit();"><i class="fa-solid fa-house"></i></button>
-                <button onclick="moveChart(chartModal, -0.2)"><i class="fa-solid fa-arrow-left"></i></button>
-                <button onclick="moveChart(chartModal, 0.2)"><i class="fa-solid fa-arrow-right"></i></button>
-                <button onclick="descargarImagen()" style="margin-left: 10px;"><i class="fa-solid fa-camera"></i> Capturar</button>
-                <span id="titulo-visor" style="margin-left: 20px; font-weight: bold; font-size: 1.2rem;"></span>
+            <div class="modal-header">
+                <h2 id="titulo-visor">Visor Detallado</h2>
+                <span class="close" onclick="cerrarVisor()">&times;</span>
             </div>
-            <div class="canvas-wrapper-modal">
-                <canvas id="chartModal"></canvas>
+            <div class="modal-body">
+                <div class="chart-container-modal">
+                    <canvas id="chartModal"></canvas>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-ctrl" onclick="controlGrafica('left')">◀</button>
+                <button class="btn-ctrl" onclick="controlGrafica('in')">➕</button>
+                <button class="btn-ctrl" onclick="controlGrafica('out')">➖</button>
+                <button class="btn-ctrl" onclick="controlGrafica('right')">▶</button>
+                <button class="btn-ctrl" onclick="controlGrafica('reset')">Reset</button>
             </div>
         </div>
     </div>
