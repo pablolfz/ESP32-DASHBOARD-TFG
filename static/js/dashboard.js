@@ -109,7 +109,18 @@ async function cargarVibracionHistorica() {
     const data = await res.json();
     
     if (data && data.v1 && data.v2 && data.v3) {
-        const tStep = 0.2; // 5000Hz = 0.2ms entre puntos
+        // Obtenemos la frecuencia (si es una lectura antigua sin frecuencia, asume 5000Hz)
+        const freq = data.frecuencia || 5000; 
+        
+        // Calculamos los milisegundos entre cada punto de forma dinámica
+        // Ej: 1/5000 = 0.0002s = 0.2ms | 1/1000 = 0.001s = 1.0ms
+        const tStep = (1 / freq) * 1000; 
+
+        // Actualizamos el título para ver de un vistazo a cuántos Hz se tomó la muestra
+        chartVibTotal.options.plugins.title = {
+            display: true,
+            text: `Frecuencia de muestreo: ${freq} Hz`
+        };
 
         // GRÁFICA 1: AMPLITUD TOTAL
         chartVibTotal.data.datasets = [
@@ -130,13 +141,21 @@ async function cargarVibracionHistorica() {
                 data: v.map((y, i) => ({x: i*tStep, y: y > 0 ? y : 0})),
                 borderColor: colores[idx], borderWidth: 1, pointRadius: 0
             });
-            // Parte Negativa (con línea discontinua)
+            // Parte Negativa
             chartVibPolar.data.datasets.push({
                 label: `S${idx+1} (-)`,
                 data: v.map((y, i) => ({x: i*tStep, y: y < 0 ? y : 0})),
                 borderColor: colores[idx], borderDash: [5, 5], borderWidth: 1, pointRadius: 0
             });
         });
+
+        // Aplicamos los datos reseteando el zoom a los botones por defecto
+        chartVibTotal.resetZoom();
+        chartVibPolar.resetZoom();
+        chartVibTotal.update('none');
+        chartVibPolar.update('none');
+    }
+}
 
         chartVibTotal.update('none');
         chartVibPolar.update('none');
@@ -200,3 +219,4 @@ function descargarCSVVibracion() {
 }
 
 function cerrarVisor() { document.getElementById('modal-visor').style.display = 'none'; }
+
