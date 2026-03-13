@@ -71,7 +71,7 @@ def download_csv():
     except:
         return "Error", 500
 
-# --- API PIEZOELÉCTRICO (Soporte 3 Sensores OPTIMIZADO PARA BLOQUES) ---
+# --- API PIEZOELÉCTRICO (Soporte 3 Sensores, Bloques y Frecuencia) ---
 @app.route('/api/vibrations', methods=['POST'])
 def post_vibration():
     try:
@@ -82,16 +82,20 @@ def post_vibration():
         # El ESP32 nos dirá a partir de qué posición insertar este bloque
         offset = data.get('offset', 0)
         
+        # Recogemos la frecuencia (si no viene, asumimos 5000 por retrocompatibilidad)
+        frecuencia = data.get('frecuencia', 5000)
+        
         v1_new = data.get('v1') or data.get('ch1') or []
         v2_new = data.get('v2') or data.get('ch2') or []
         v3_new = data.get('v3') or data.get('ch3') or []
 
         # Log para depuración en Render
-        print(f">> Recibido bloque para {id_cap} | Offset: {offset} | Puntos: {len(v1_new)}")
+        print(f">> Recibido bloque {id_cap} | Offset: {offset} | Puntos: {len(v1_new)} | Freq: {frecuencia} Hz")
 
         patch_payload = {
             "timestamp": datetime.utcnow().isoformat() + "Z",
-            "device_id": data.get('device', 'ESP32_Triaxial')
+            "device_id": data.get('device', 'ESP32_Triaxial'),
+            "frecuencia": frecuencia  # <-- ¡Guardamos la frecuencia en la BD!
         }
 
         # Preparamos los índices exactos para Firebase (ej: "v1/450": valor)
@@ -137,7 +141,7 @@ def get_vibration_detail(id):
             return jsonify({"error": "Muestra no encontrada"}), 404
             
         if isinstance(res, dict):
-            # Normalización para el frontend
+            # Normalización para el frontend (compatibilidad con capturas antiguas)
             if 'ch1' in res and 'v1' not in res: res['v1'] = res.pop('ch1')
             if 'ch2' in res and 'v2' not in res: res['v2'] = res.pop('ch2')
             if 'ch3' in res and 'v3' not in res: res['v3'] = res.pop('ch3')
