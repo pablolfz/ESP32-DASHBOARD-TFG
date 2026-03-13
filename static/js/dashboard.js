@@ -29,7 +29,11 @@ function initCharts() {
         },
         plugins: { 
             zoom: { 
-                zoom: { wheel: { enabled: false }, drag: { enabled: true }, mode: 'x' }, 
+                zoom: { 
+                    wheel: { enabled: false }, // Rueda del ratón estrictamente desactivada
+                    drag: { enabled: true },   // Seleccionar área arrastrando
+                    mode: 'x' 
+                }, 
                 pan: { enabled: true, mode: 'x' } 
             },
             legend: { labels: { font: { size: 12 } } }
@@ -41,7 +45,7 @@ function initCharts() {
     chart2 = new Chart(document.getElementById('chart2').getContext('2d'), { type: 'line', data: { datasets: [] }, options: getOptions('Temp (°C)') });
     chart3 = new Chart(document.getElementById('chart3').getContext('2d'), { type: 'line', data: { datasets: [] }, options: getOptions('Temp (°C)') });
 
-    // NUEVAS Gráficas Piezoeléctricas
+    // Gráficas Piezoeléctricas
     chartVibTotal = new Chart(document.getElementById('chartVibTotal').getContext('2d'), {
         type: 'line',
         data: { datasets: [] },
@@ -92,7 +96,7 @@ async function updateData() {
     } catch (e) { console.error(e); }
 }
 
-// --- 3. LÓGICA PIEZOELÉCTRICO (3 SENSORES) ---
+// --- 3. LÓGICA PIEZOELÉCTRICO ---
 async function actualizarListaVibraciones() {
     try {
         const res = await fetch('/api/vibrations/list');
@@ -109,17 +113,17 @@ async function cargarVibracionHistorica() {
     const data = await res.json();
     
     if (data && data.v1 && data.v2 && data.v3) {
-        // Obtenemos la frecuencia (si es una lectura antigua sin frecuencia, asume 5000Hz)
+        // Obtenemos la frecuencia dinámica (por defecto 5000Hz si es una captura antigua)
         const freq = data.frecuencia || 5000; 
         
         // Calculamos los milisegundos entre cada punto de forma dinámica
-        // Ej: 1/5000 = 0.0002s = 0.2ms | 1/1000 = 0.001s = 1.0ms
         const tStep = (1 / freq) * 1000; 
 
-        // Actualizamos el título para ver de un vistazo a cuántos Hz se tomó la muestra
+        // Actualizamos el título de la gráfica principal para indicar los Hz
         chartVibTotal.options.plugins.title = {
             display: true,
-            text: `Frecuencia de muestreo: ${freq} Hz`
+            text: `Frecuencia de muestreo: ${freq} Hz`,
+            font: { size: 14 }
         };
 
         // GRÁFICA 1: AMPLITUD TOTAL
@@ -149,7 +153,6 @@ async function cargarVibracionHistorica() {
             });
         });
 
-        // Aplicamos los datos reseteando el zoom a los botones por defecto
         chartVibTotal.resetZoom();
         chartVibPolar.resetZoom();
         chartVibTotal.update('none');
@@ -157,12 +160,13 @@ async function cargarVibracionHistorica() {
     }
 }
 
-        chartVibTotal.update('none');
-        chartVibPolar.update('none');
-    }
+// --- 4. CONTROLES DE ZOOM Y VISOR ---
+
+// Función para conectar los botones de zoom en el HTML
+function hacerZoom(chart, porcentaje) {
+    chart.zoom(porcentaje);
 }
 
-// --- 4. MAXIVISOR Y DESCARGAS ---
 function abrirMaxivisor(chartOrigen, titulo) {
     document.getElementById('modal-visor').style.display = 'block';
     document.getElementById('titulo-visor').textContent = titulo;
@@ -219,4 +223,3 @@ function descargarCSVVibracion() {
 }
 
 function cerrarVisor() { document.getElementById('modal-visor').style.display = 'none'; }
-
