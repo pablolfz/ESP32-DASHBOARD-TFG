@@ -30,8 +30,8 @@ function initCharts() {
         plugins: { 
             zoom: { 
                 zoom: { 
-                    wheel: { enabled: false }, // Rueda del ratón estrictamente desactivada
-                    drag: { enabled: true },   // Seleccionar área arrastrando
+                    wheel: { enabled: false }, // Rueda del ratón desactivada por tu preferencia
+                    drag: { enabled: true },   
                     mode: 'x' 
                 }, 
                 pan: { enabled: true, mode: 'x' } 
@@ -40,12 +40,10 @@ function initCharts() {
         }
     });
 
-    // Gráficas de Temperatura
     chart1 = new Chart(document.getElementById('chart1').getContext('2d'), { type: 'line', data: { datasets: [] }, options: getOptions('Temp (°C)') });
     chart2 = new Chart(document.getElementById('chart2').getContext('2d'), { type: 'line', data: { datasets: [] }, options: getOptions('Temp (°C)') });
     chart3 = new Chart(document.getElementById('chart3').getContext('2d'), { type: 'line', data: { datasets: [] }, options: getOptions('Temp (°C)') });
 
-    // Gráficas Piezoeléctricas
     chartVibTotal = new Chart(document.getElementById('chartVibTotal').getContext('2d'), {
         type: 'line',
         data: { datasets: [] },
@@ -113,39 +111,31 @@ async function cargarVibracionHistorica() {
     const data = await res.json();
     
     if (data && data.v1 && data.v2 && data.v3) {
-        // Obtenemos la frecuencia dinámica (por defecto 5000Hz si es una captura antigua)
         const freq = data.frecuencia || 5000; 
-        
-        // Calculamos los milisegundos entre cada punto de forma dinámica
         const tStep = (1 / freq) * 1000; 
 
-        // Actualizamos el título de la gráfica principal para indicar los Hz
         chartVibTotal.options.plugins.title = {
             display: true,
             text: `Frecuencia de muestreo: ${freq} Hz`,
             font: { size: 14 }
         };
 
-        // GRÁFICA 1: AMPLITUD TOTAL
         chartVibTotal.data.datasets = [
             { label: 'Sensor 1', data: data.v1.map((y, i) => ({x: i*tStep, y: y})), borderColor: '#e74c3c', borderWidth: 1, pointRadius: 0 },
             { label: 'Sensor 2', data: data.v2.map((y, i) => ({x: i*tStep, y: y})), borderColor: '#2ecc71', borderWidth: 1, pointRadius: 0 },
             { label: 'Sensor 3', data: data.v3.map((y, i) => ({x: i*tStep, y: y})), borderColor: '#3498db', borderWidth: 1, pointRadius: 0 }
         ];
 
-        // GRÁFICA 2: POSITIVO / NEGATIVO
         chartVibPolar.data.datasets = [];
         const colores = ['#e74c3c', '#2ecc71', '#3498db'];
         const señales = [data.v1, data.v2, data.v3];
 
         señales.forEach((v, idx) => {
-            // Parte Positiva
             chartVibPolar.data.datasets.push({
                 label: `S${idx+1} (+)`,
                 data: v.map((y, i) => ({x: i*tStep, y: y > 0 ? y : 0})),
                 borderColor: colores[idx], borderWidth: 1, pointRadius: 0
             });
-            // Parte Negativa
             chartVibPolar.data.datasets.push({
                 label: `S${idx+1} (-)`,
                 data: v.map((y, i) => ({x: i*tStep, y: y < 0 ? y : 0})),
@@ -162,7 +152,6 @@ async function cargarVibracionHistorica() {
 
 // --- 4. CONTROLES DE ZOOM Y VISOR ---
 
-// Función para conectar los botones de zoom en el HTML
 function hacerZoom(chart, porcentaje) {
     chart.zoom(porcentaje);
 }
@@ -200,26 +189,16 @@ function descargarImagen(chart, nombre) {
     link.click();
 }
 
+/** * NUEVA FUNCIÓN: Descarga el CSV directamente desde el servidor Flask
+ * con el formato compatible para el visor de escritorio (PIEZOS-VIEWER)
+ */
 function descargarCSVVibracion() {
-    const datasets = chartVibTotal.data.datasets;
-    if (!datasets.length) return alert("Carga una muestra primero");
+    const id = document.getElementById('select-vibraciones').value;
+    if (!id) return alert("Selecciona una muestra primero");
     
-    let csv = "Tiempo (ms),Sensor 1,Sensor 2,Sensor 3\n";
-    const len = datasets[0].data.length;
-    
-    for(let i=0; i<len; i++) {
-        const t = datasets[0].data[i].x;
-        const s1 = datasets[0].data[i].y;
-        const s2 = datasets[1].data[i].y;
-        const s3 = datasets[2].data[i].y;
-        csv += `${t},${s1},${s2},${s3}\n`;
-    }
-
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `Captura_Triaxial_${new Date().getTime()}.csv`;
-    link.click();
+    // Llamamos a la nueva ruta de Flask que creamos anteriormente
+    // Esto asegura que el archivo tenga la cabecera "Modo: X, Frecuencia: Y"
+    window.location.href = `/api/vibrations/download_csv/${id}`;
 }
 
 function cerrarVisor() { document.getElementById('modal-visor').style.display = 'none'; }
