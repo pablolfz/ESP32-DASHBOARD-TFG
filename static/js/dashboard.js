@@ -66,11 +66,23 @@ async function updateData() {
         const data = await res.json();
         if (!data || data.length === 0) return;
 
+        // 1. Definir el límite de tiempo (Ahora - 12 horas)
+        const doceHorasEnMs = 12 * 60 * 60 * 1000;
+        const limiteTiempo = Date.now() - doceHorasEnMs;
+
         document.getElementById('currentTime').textContent = "Sincronizado: " + new Date().toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
 
         const charts = [chart1, chart2, chart3];
         [1, 2, 3].forEach(num => {
-            const filtered = data.filter(i => String(i.device_id).includes(num.toString())).sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+            // 2. Filtrar por ID de dispositivo Y por ventana de tiempo (últimas 12h)
+            const filtered = data
+                .filter(i => {
+                    const esMismoDispositivo = String(i.device_id).includes(num.toString());
+                    const esReciente = new Date(i.timestamp).getTime() > limiteTiempo;
+                    return esMismoDispositivo && esReciente;
+                })
+                .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
             if (filtered.length > 0) {
                 const d = filtered[filtered.length - 1];
                 const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val ? val.toFixed(1) : "--"; };
@@ -89,6 +101,10 @@ async function updateData() {
                     { label: 'Humedad', data: filtered.map(i => ({x: new Date(i.timestamp), y: i.h_aht})), borderColor: '#3498db', yAxisID: 'y1', borderDash: [5,5] }
                 ];
                 cObj.update('none');
+            } else {
+                // Opcional: Limpiar gráfica si no hay datos en las últimas 12h
+                charts[num-1].data.datasets = [];
+                charts[num-1].update('none');
             }
         });
     } catch (e) { console.error(e); }
