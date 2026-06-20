@@ -50,7 +50,6 @@ def get_history():
 def download_csv():
     try:
         fb_data = requests.get(FIREBASE_TEMPS_URL, timeout=15).json()
-        limite = datetime.utcnow() - timedelta(days=30)
         output = io.StringIO()
         writer = csv.writer(output)
         writer.writerow(['Fecha', 'Estacion', 'T_Amb', 'H_Amb', 'S1', 'S2', 'S3', 'S4', 'RSSI'])
@@ -59,18 +58,29 @@ def download_csv():
         for i in items:
             if not i: continue
             try:
-                fecha = datetime.fromisoformat(i['timestamp'].replace('Z', ''))
-                if fecha > limite:
-                    writer.writerow([i['timestamp'], i['device_id'], i.get('t_aht'), i.get('h_aht'), i.get('t1'), i.get('t2'), i.get('t3'), i.get('t4'), i.get('rssi')])
-            except: continue
+                # Al eliminar el filtro de fecha, escribimos directamente todas las filas.
+                # Usamos .get() en 'timestamp' y 'device_id' por seguridad por si algún registro antiguo estuviera incompleto.
+                writer.writerow([
+                    i.get('timestamp'), 
+                    i.get('device_id'), 
+                    i.get('t_aht'), 
+                    i.get('h_aht'), 
+                    i.get('t1'), 
+                    i.get('t2'), 
+                    i.get('t3'), 
+                    i.get('t4'), 
+                    i.get('rssi')
+                ])
+            except: 
+                continue
             
         res = make_response(output.getvalue())
-        res.headers["Content-Disposition"] = "attachment; filename=Historico_30d.csv"
+        # Modificamos el nombre del archivo de descarga para reflejar que es el completo
+        res.headers["Content-Disposition"] = "attachment; filename=Historico_Completo.csv"
         res.headers["Content-type"] = "text/csv"
         return res
     except:
         return "Error", 500
-
 # --- API PIEZOELÉCTRICO (Soporte 3 Sensores, Bloques y Frecuencia) ---
 @app.route('/api/vibrations', methods=['POST'])
 def post_vibration():
